@@ -52,7 +52,8 @@ export function Modal({
   "data-testid": dataTestId,
 }: ModalProps) {
   useEffect(() => {
-    if (open) {
+    // Khi modal mở, khóa cuộn trang
+    if (open) {  
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
