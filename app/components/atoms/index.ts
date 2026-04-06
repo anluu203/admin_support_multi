@@ -13,3 +13,4 @@ export * from "./Divider";
 export * from "./Switch";
 export * from "./Label";
 export * from "./Alert";
+export { default as ButtonWithIcon } from './ButtonWithIcon';

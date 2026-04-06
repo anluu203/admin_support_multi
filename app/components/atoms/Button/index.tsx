@@ -22,9 +22,8 @@ type ButtonSize = "sm" | "md" | "lg";
 /**
  * Props cho Button component
  */
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Biến thể hiển thị (mặc định: 'primary') */
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Biến thể hiển thị:  "primary"| "secondary"| "outline"| "ghost"| "link"| "danger" */
   variant?: ButtonVariant;
   /** Kích thước button (mặc định: 'md') */
   size?: ButtonSize;
@@ -45,8 +44,7 @@ const variantClasses: Record<ButtonVariant, string> = {
     "border-2 border-primary text-primary hover:bg-primary-light disabled:border-text-muted disabled:text-text-muted",
   ghost: "text-primary hover:bg-primary-light disabled:text-text-muted",
   link: "text-primary underline-offset-4 hover:underline disabled:text-text-muted",
-  danger:
-    "bg-error text-text-surface hover:bg-error/90 disabled:bg-text-muted",
+  danger: "bg-error text-text-surface hover:bg-error/90 disabled:bg-text-muted",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -79,13 +77,13 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors",
+        "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors cursor-pointer",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-50",
         variantClasses[variant],
         sizeClasses[size],
         fullWidth && "w-full",
-        className
+        className,
       )}
       disabled={disabled || isLoading}
       data-testid={dataTestId}
