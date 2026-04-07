@@ -14,3 +14,5 @@ export * from "./Switch";
 export * from "./Label";
 export * from "./Alert";
 export { default as ButtonWithIcon } from './ButtonWithIcon';
+export { default as Logo } from './Logo';
+export { default as Heading } from './Heading';
