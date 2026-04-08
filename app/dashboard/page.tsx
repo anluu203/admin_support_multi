@@ -108,12 +108,14 @@ export default function DashboardPage() {
           </Card>
 
           <Card padding="lg">
-            <Text weight="bold" className="mb-2">
-              💬 Chat
-            </Text>
-            <Text size="sm" color="muted">
-              Quản lý tin nhắn khách hàng
-            </Text>
+            <a href="/dashboard/chat" className="block">
+              <Text weight="bold" className="mb-2">
+                💬 Live Chat
+              </Text>
+              <Text size="sm" color="muted">
+                Quản lý hội thoại realtime &amp; offline
+              </Text>
+            </a>
           </Card>
 
           <Card padding="lg">
