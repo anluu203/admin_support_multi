@@ -2,8 +2,7 @@
 
 import { Alert } from "@/app/components/atoms/Alert";
 import { Button } from "@/app/components/atoms/Button";
-import { cn } from "@/app/utils/cn";
-import type { ReactNode } from "react";
+import { cn } from "@/app/lib/utils/cn";import type { ReactNode } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 
 /**

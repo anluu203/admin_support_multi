@@ -1,6 +1,5 @@
 import { Text } from "@/app/components/atoms/Text";
-import { cn } from "@/app/utils/cn";
-import { FileQuestion } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { FileQuestion } from "lucide-react";
 
 /**
  * Props cho EmptyState component

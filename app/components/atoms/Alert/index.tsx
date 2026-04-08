@@ -1,4 +1,4 @@
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/app/lib/utils/cn";
 import {
   AlertCircle,
   CheckCircle2,
@@ -68,7 +68,7 @@ const variantConfig: Record<
  * </Alert>
  * ```
  */
-export function Alert({
+export  function Alert({
   children,
   variant,
   title,

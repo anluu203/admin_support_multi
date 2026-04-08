@@ -1,8 +1,7 @@
 "use client";
 
 import { IconButton } from "@/app/components/molecules/IconButton";
-import { cn } from "@/app/utils/cn";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /**
  * Props cho Pagination component

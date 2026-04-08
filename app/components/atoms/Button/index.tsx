@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
-import { Loader2 } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { Loader2 } from "lucide-react";
 
 /**
  * Biến thể Button

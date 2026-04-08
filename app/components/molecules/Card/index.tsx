@@ -1,5 +1,4 @@
-import { cn } from "@/app/utils/cn";
-
+import { cn } from "@/app/lib/utils/cn";
 /**
  * Props cho Card component
  */

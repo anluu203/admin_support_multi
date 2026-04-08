@@ -1,8 +1,7 @@
 "use client";
 
 import { Input, type InputProps } from "@/app/components/atoms/Input";
-import { cn } from "@/app/utils/cn";
-import { type LucideIcon } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { type LucideIcon } from "lucide-react";
 import { forwardRef } from "react";
 
 /**

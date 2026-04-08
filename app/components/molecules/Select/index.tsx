@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
-import { ChevronDown } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { ChevronDown } from "lucide-react";
 import { forwardRef } from "react";
 
 /**

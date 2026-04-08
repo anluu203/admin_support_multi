@@ -1,7 +1,7 @@
 import React from "react";
 import { Edit2, ShieldAlert, Trash2, ShieldCheck } from "lucide-react";
 import { UserRole } from "@/app/types/user";
-import { canPerformAction } from "@/app/utils/auth";
+import { canPerformAction } from "@/app/lib/utils/auth";
 
 interface UserActionButtonsProps {
   currentUserId: string;

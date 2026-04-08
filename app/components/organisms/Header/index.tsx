@@ -2,8 +2,7 @@
 
 import { Avatar } from "@/app/components/atoms/Avatar";
 import { Dropdown, type DropdownItem } from "@/app/components/molecules/Dropdown";
-import { cn } from "@/app/utils/cn";
-import { Bell } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { Bell } from "lucide-react";
 
 /**
  * Thông tin user cho Header

@@ -3,8 +3,7 @@
 import { Pagination } from "@/app/components/molecules/Pagination";
 import { SearchInput } from "@/app/components/molecules/SearchInput";
 import { Table, type TableColumn } from "@/app/components/organisms/Table";
-import { cn } from "@/app/utils/cn";
-import { useState } from "react";
+import { cn } from "@/app/lib/utils/cn";import { useState } from "react";
 
 /**
  * Props cho DataTable component

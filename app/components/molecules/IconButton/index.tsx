@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
-import { type LucideIcon } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { type LucideIcon } from "lucide-react";
 
 /**
  * Props cho IconButton component

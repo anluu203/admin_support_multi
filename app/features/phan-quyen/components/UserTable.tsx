@@ -1,16 +1,15 @@
 "use client";
 
-import React, { useMemo } from "react";
+import  { useMemo } from "react";
 import { User, UserRole } from "@/app/types/user";
 import { Table, TableColumn } from "@/app/components/organisms/Table";
 import { StatusBadge } from "@/app/components/atoms/StatusBadge";
-import { RoleBadge } from "@/app/components/atoms/RoleBadge";
+import { RoleBadge } from "@/app/features/phan-quyen/components/RoleBadge";
 import { Text } from "@/app/components/atoms/Text";
 import { UserActionButtons } from "@/app/components/molecules/UserActionButtons";
 
 interface UserTableProps {
   users: User[];
-  isLoading: boolean;
   currentPage: number;
   totalCount: number;
   pageSize: number;
@@ -22,13 +21,9 @@ interface UserTableProps {
   onDelete: (user: User) => void;
 }
 
-/**
- * UserTable - Bảng hiển thị danh sách người dùng
- * Sử dụng Table component có sẵn từ /components/organisms/Table
- */
+
 export function UserTable({
   users,
-  isLoading,
   currentPage,
   totalCount,
   pageSize,
@@ -41,7 +36,6 @@ export function UserTable({
 }: UserTableProps) {
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  // Define table columns
   const columns = useMemo<TableColumn<User>[]>(
     () => [
       {
@@ -118,12 +112,11 @@ export function UserTable({
       <Table<User>
         columns={columns}
         data={users}
-        loading={isLoading}
         className="rounded-t-lg"
       />
 
       {/* Pagination */}
-      {!isLoading && totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="bg-background-surface px-4 py-3 border-t border-b border-border flex items-center justify-between sm:px-6 rounded-b-lg">
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
@@ -178,26 +171,6 @@ export function UserTable({
             </div>
           </div>
 
-          {/* Mobile Pagination */}
-          <div className="flex items-center justify-between w-full sm:hidden gap-2">
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-3 py-1 text-sm rounded bg-background-muted text-text disabled:opacity-50"
-            >
-              Trước
-            </button>
-            <Text size="sm" color="muted">
-              {currentPage} / {totalPages}
-            </Text>
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm rounded bg-background-muted text-text disabled:opacity-50"
-            >
-              Sau
-            </button>
-          </div>
         </div>
       )}
     </div>
