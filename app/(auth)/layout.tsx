@@ -1,6 +1,5 @@
 "use client";
 
-import { Spinner } from "@/app/components";
 import { ProtectedAuthLayout } from "@/app/components/organisms";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
