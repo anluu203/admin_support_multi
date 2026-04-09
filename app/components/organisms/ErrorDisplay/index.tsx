@@ -1,7 +1,6 @@
-import { Alert } from "@/app/components/atoms/Alert";
 import { Button } from "@/app/components/atoms/Button";
-import { cn } from "@/app/utils/cn";
-
+import { cn } from "@/app/lib/utils/cn";
+import { Alert } from "../../atoms";
 /**
  * Error object (theo Result type)
  */

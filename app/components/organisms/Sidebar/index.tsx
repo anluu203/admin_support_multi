@@ -1,8 +1,7 @@
 "use client";
 
 import { CustomLink } from "@/app/components/molecules/CustomLink";
-import { cn } from "@/app/utils/cn";
-import { ChevronLeft, type LucideIcon } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { ChevronLeft, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 
 /**

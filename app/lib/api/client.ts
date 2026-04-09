@@ -64,7 +64,7 @@ function getAccessToken(): string | null {
 async function handleResponse<T>(response: Response): Promise<Result<T>> {
   try {
     const data: ApiResponse<T> = await response.json();
-
+    console.log("API Response:", data);
     if (data.isSuccess && data.data !== null) {
       return ok(data.data);
     }

@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
-
+import { cn } from "@/app/lib/utils/cn";
 /**
  * Item cho Tabs
  */

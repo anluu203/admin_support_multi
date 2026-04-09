@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
-import { type LucideIcon } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { type LucideIcon } from "lucide-react";
 
 /**
  * Props cho ButtonWithIcon component
@@ -80,7 +79,7 @@ export default function ButtonWithIcon({
     <button
       className={cn(
         "inline-flex items-center justify-center rounded-md font-medium transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-50",
         variantClasses[variant],
         sizeClasses[size],

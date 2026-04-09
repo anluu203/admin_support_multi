@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
-import { Check } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { Check } from "lucide-react";
 import { forwardRef, useId } from "react";
 
 /**

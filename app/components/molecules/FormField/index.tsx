@@ -1,6 +1,5 @@
 import { Label } from "@/app/components/atoms/Label";
-import { cn } from "@/app/utils/cn";
-
+import { cn } from "@/app/lib/utils/cn";
 /**
  * Props cho FormField component
  */

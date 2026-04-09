@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
-import { Loader2 } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { Loader2 } from "lucide-react";
 
 /**
  * Biến thể Button
@@ -41,7 +40,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary:
     "bg-secondary text-text-surface hover:bg-secondary-hover disabled:bg-text-muted",
   outline:
-    "border-2 border-primary text-primary hover:bg-primary-light disabled:border-text-muted disabled:text-text-muted",
+    "border border-primary text-primary hover:bg-primary-light disabled:border-text-muted disabled:text-text-muted",
   ghost: "text-primary hover:bg-primary-light disabled:text-text-muted",
   link: "text-primary underline-offset-4 hover:underline disabled:text-text-muted",
   danger: "bg-error text-text-surface hover:bg-error/90 disabled:bg-text-muted",

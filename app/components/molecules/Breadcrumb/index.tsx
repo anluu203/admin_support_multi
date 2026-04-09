@@ -1,6 +1,5 @@
 import { CustomLink } from "@/app/components/molecules/CustomLink";
-import { cn } from "@/app/utils/cn";
-import { ChevronRight } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { ChevronRight } from "lucide-react";
 
 /**
  * Item cho Breadcrumb

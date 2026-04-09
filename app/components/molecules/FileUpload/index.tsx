@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
-import { Upload, X } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { Upload, X } from "lucide-react";
 import { forwardRef, useState } from "react";
 
 /**

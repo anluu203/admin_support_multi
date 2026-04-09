@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/app/lib/utils/cn";
 import { User } from "lucide-react";
 import { useState } from "react";
 

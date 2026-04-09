@@ -2,8 +2,7 @@
 
 import { Spinner } from "@/app/components/atoms/Spinner";
 import { EmptyState } from "@/app/components/molecules/EmptyState";
-import { cn } from "@/app/utils/cn";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { cn } from "@/app/lib/utils/cn";import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useState } from "react";
 
 /**

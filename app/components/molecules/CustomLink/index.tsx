@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/app/utils/cn";
-import Link from "next/link";
+import { cn } from "@/app/lib/utils/cn";import Link from "next/link";
 
 /**
  * Props cho CustomLink component
