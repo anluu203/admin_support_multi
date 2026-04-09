@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { ref, onChildAdded, onChildChanged, onChildRemoved, off } from "firebase/database";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { ref, onChildAdded, onChildRemoved, onValue } from "firebase/database";
 import { getDb } from "@/app/lib/firebase";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -20,28 +20,23 @@ export interface FirebaseChatRoomMeta {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 /**
- * Subscribes to /chats/ in Firebase and returns the list of ALL chat rooms.
- * Uses onChildAdded for initial load + new rooms, onChildChanged for status updates.
+ * Subscribes to /chats/ in Firebase and returns the list of open chat rooms.
  *
- * NOTE: onChildAdded fires once per existing room on mount (full snapshot).
- * onChildChanged fires when metadata changes (status open→closed etc).
- * We intentionally do NOT watch message changes here to avoid sidebar re-renders
- * on every new message — messages are tracked separately per open room.
+ * Performance design:
+ * - onChildAdded  → fires once per room on mount (initial load) and for new rooms.
+ *                   Reads metadata from the initial snapshot for immediate display.
+ * - onValue (per-room) → set up on /chats/{chatId}/metadata for each room.
+ *                   Fires ONLY when metadata changes (status, unreadCount, etc.),
+ *                   NOT when messages are written — avoids downloading full room
+ *                   snapshots (metadata + all messages) on every message send.
+ * - onChildChanged removed → was firing on every message write and triggering
+ *                   a full room download (O(rooms × messages) bandwidth waste).
  */
 export function useFirebaseChatList(enabled: boolean) {
   const [rooms, setRooms] = useState<FirebaseChatRoomMeta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const upsertRoom = useCallback((chatId: string, val: Record<string, unknown>) => {
-    const meta = val?.metadata as Record<string, unknown> | undefined;
-    if (!meta) return;
-
-    // Count unread user messages
-    const messages = (val?.messages ?? {}) as Record<string, { sender: string; read?: boolean }>;
-    const unreadCount = Object.values(messages).filter(
-      (m) => m.sender === "user" && m.read === false
-    ).length;
-
+  const upsertRoom = useCallback((chatId: string, meta: Record<string, unknown>) => {
     const room: FirebaseChatRoomMeta = {
       chatId,
       userId: String(meta.userId ?? ""),
@@ -50,7 +45,7 @@ export function useFirebaseChatList(enabled: boolean) {
       userQuestion: String(meta.userQuestion ?? ""),
       createdAt: Number(meta.createdAt ?? Date.now()),
       closedAt: meta.closedAt ? Number(meta.closedAt) : undefined,
-      unreadCount,
+      unreadCount: Number(meta.unreadCount ?? 0),
     };
 
     setRooms((prev) => {
@@ -71,15 +66,44 @@ export function useFirebaseChatList(enabled: boolean) {
     }
 
     const chatsRef = ref(db, "chats");
+    // Unsubscribe functions keyed by chatId for per-room metadata listeners
+    const metaUnsubs = new Map<string, () => void>();
     let initialLoadDone = false;
 
-    const addedHandler = onChildAdded(chatsRef, (snapshot) => {
+    const unsubAdded = onChildAdded(chatsRef, (snapshot) => {
       const chatId = snapshot.key;
       if (!chatId) return;
-      upsertRoom(chatId, snapshot.val() ?? {});
+
+      const val = snapshot.val() ?? {};
+      const meta = val.metadata as Record<string, unknown> | undefined;
+
+      // Always add the room immediately — even if the backend hasn't written
+      // metadata yet (two-step create: messages first, metadata second).
+      // Using status "open" as the safe default since onChildAdded at /chats/
+      // fires when a room is first created. The per-room onValue below will
+      // overwrite with the real metadata as soon as it's available.
+      upsertRoom(chatId, meta ?? {
+        status: "open",
+        userId: chatId,
+        userQuestion: "",
+        createdAt: Date.now(),
+        unreadCount: 0,
+      });
+
+      // Set up a lightweight per-room listener on /chats/{chatId}/metadata.
+      // Fires ONLY when metadata changes — never when messages are written.
+      if (!metaUnsubs.has(chatId)) {
+        const metaRef = ref(db, `chats/${chatId}/metadata`);
+        const unsub = onValue(metaRef, (snap) => {
+          const m = snap.val() as Record<string, unknown> | null;
+          if (m) upsertRoom(chatId, m);
+        });
+        metaUnsubs.set(chatId, unsub);
+      }
+
       if (!initialLoadDone) {
         // Firebase fires all existing children synchronously then stops —
-        // we use a micro-task to detect when the initial burst is done.
+        // use a micro-task to detect when the initial burst is done.
         Promise.resolve().then(() => {
           initialLoadDone = true;
           setIsLoading(false);
@@ -87,15 +111,11 @@ export function useFirebaseChatList(enabled: boolean) {
       }
     });
 
-    const changedHandler = onChildChanged(chatsRef, (snapshot) => {
-      const chatId = snapshot.key;
-      if (!chatId) return;
-      upsertRoom(chatId, snapshot.val() ?? {});
-    });
-
-    const removedHandler = onChildRemoved(chatsRef, (snapshot) => {
+    const unsubRemoved = onChildRemoved(chatsRef, (snapshot) => {
       const chatId = snapshot.key;
       if (chatId) {
+        metaUnsubs.get(chatId)?.();
+        metaUnsubs.delete(chatId);
         setRooms((prev) => prev.filter((r) => r.chatId !== chatId));
       }
     });
@@ -104,16 +124,23 @@ export function useFirebaseChatList(enabled: boolean) {
     const timeout = setTimeout(() => setIsLoading(false), 4000);
 
     return () => {
-      off(chatsRef, "child_added");
-      off(chatsRef, "child_changed");
-      off(chatsRef, "child_removed");
+      unsubAdded();
+      unsubRemoved();
+      metaUnsubs.forEach((unsub) => unsub());
+      metaUnsubs.clear();
       clearTimeout(timeout);
     };
   }, [enabled, upsertRoom]);
 
-  const openRooms = rooms
-    .filter((r) => r.status === "open")
-    .sort((a, b) => b.createdAt - a.createdAt);
+  // useMemo: stabilise the array reference so downstream useMemo/useEffect
+  // deps don't trigger on unrelated state updates.
+  const openRooms = useMemo(
+    () =>
+      rooms
+        .filter((r) => r.status === "open")
+        .sort((a, b) => b.createdAt - a.createdAt),
+    [rooms]
+  );
 
   return { rooms: openRooms, allRooms: rooms, isLoading };
 }

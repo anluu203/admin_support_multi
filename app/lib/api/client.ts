@@ -27,14 +27,12 @@ function buildUrl(
 ): string {
   let url = endpoint;
 
-  // Thay thế path params
   if (pathParams) {
     Object.entries(pathParams).forEach(([key, value]) => {
       url = url.replace(`:${key}`, encodeURIComponent(value));
     });
   }
 
-  // Thêm query params
   if (params) {
     const queryString = Object.entries(params)
       .filter(([, value]) => value !== undefined)
@@ -83,153 +81,115 @@ async function handleResponse<T>(response: Response): Promise<Result<T>> {
   }
 }
 
+// ─── Token refresh (module-level để tránh duplicate concurrent refresh) ───────
+
+let _isRefreshing = false;
+let _refreshPromise: Promise<boolean> | null = null;
+
+/**
+ * Thử refresh access token. Nếu đang refresh thì các caller khác sẽ đợi cùng
+ * một Promise thay vì gửi nhiều request refresh song song.
+ */
+async function tryRefreshToken(): Promise<boolean> {
+  if (_isRefreshing && _refreshPromise) return _refreshPromise;
+
+  _isRefreshing = true;
+  _refreshPromise = (async (): Promise<boolean> => {
+    try {
+      if (typeof window === "undefined") return false;
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (!refreshToken) return false;
+
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      if (data.isSuccess && data.data?.accessToken) {
+        localStorage.setItem("accessToken", data.data.accessToken);
+        if (data.data.refreshToken) {
+          localStorage.setItem("refreshToken", data.data.refreshToken);
+        }
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    } finally {
+      _isRefreshing = false;
+      _refreshPromise = null;
+    }
+  })();
+
+  return _refreshPromise;
+}
+
+function redirectToLogin(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    window.location.href = "/login";
+  }
+}
+
+// ─── API Client ───────────────────────────────────────────────────────────────
+
 /**
  * Base API Client
+ *
+ * Tất cả các HTTP method đều đi qua `request()` trung tâm để:
+ * - Tự động gắn Bearer token
+ * - Tự động refresh token khi nhận 401, retry request gốc
+ * - Redirect về /login nếu refresh thất bại
  */
 class ApiClient {
-  /**
-   * GET request
-   */
-  async get<T>(endpoint: string, options?: RequestOptions): Promise<Result<T>> {
-    try {
-      const url = buildUrl(endpoint, options?.params, options?.pathParams);
-      const token = getAccessToken();
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-          ...options?.headers,
-        },
-        ...options,
-      });
-
-      return handleResponse<T>(response);
-    } catch (error) {
-      return err({
-        message: "Không thể kết nối đến server",
-        details: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  /**
-   * POST request
-   */
-  async post<T>(
+  private async request<T>(
+    method: string,
     endpoint: string,
     body?: unknown,
     options?: RequestOptions
   ): Promise<Result<T>> {
-    try {
+    const makeRequest = async (): Promise<Response> => {
       const url = buildUrl(endpoint, options?.params, options?.pathParams);
       const token = getAccessToken();
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-          ...options?.headers,
-        },
-        body: JSON.stringify(body),
-        ...options,
-      });
-
-      return handleResponse<T>(response);
-    } catch (error) {
-      return err({
-        message: "Không thể kết nối đến server",
-        details: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  /**
-   * PUT request
-   */
-  async put<T>(
-    endpoint: string,
-    body?: unknown,
-    options?: RequestOptions
-  ): Promise<Result<T>> {
-    try {
-      const url = buildUrl(endpoint, options?.params, options?.pathParams);
-      const token = getAccessToken();
-
-      const response = await fetch(url, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-          ...options?.headers,
-        },
-        body: JSON.stringify(body),
-        ...options,
-      });
-
-      return handleResponse<T>(response);
-    } catch (error) {
-      return err({
-        message: "Không thể kết nối đến server",
-        details: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  /**
-   * PATCH request
-   */
-  async patch<T>(
-    endpoint: string,
-    body?: unknown,
-    options?: RequestOptions
-  ): Promise<Result<T>> {
-    try {
-      const url = buildUrl(endpoint, options?.params, options?.pathParams);
-      const token = getAccessToken();
-
-      const response = await fetch(url, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-          ...options?.headers,
-        },
-        body: JSON.stringify(body),
-        ...options,
-      });
-
-      return handleResponse<T>(response);
-    } catch (error) {
-      return err({
-        message: "Không thể kết nối đến server",
-        details: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  /**
-   * DELETE request
-   */
-  async delete<T>(endpoint: string, options?: RequestOptions): Promise<Result<T>> {
-    try {
-      const url = buildUrl(endpoint, options?.params, options?.pathParams);
-      const token = getAccessToken();
-
-      const response = await fetch(url, {
-        method: "DELETE",
+      const init: RequestInit = {
+        method,
         headers: {
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
           ...options?.headers,
         },
         ...options,
-      });
+      };
+      if (body !== undefined) {
+        init.body = JSON.stringify(body);
+      }
+      return fetch(url, init);
+    };
+
+    try {
+      let response = await makeRequest();
+
+      // Tự động refresh token khi hết hạn
+      if (response.status === 401) {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+          response = await makeRequest(); // Retry với token mới
+        } else {
+          redirectToLogin();
+          return err({
+            message: "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại",
+            code: "401",
+          });
+        }
+      }
 
       // DELETE thường trả 204 No Content
-      if (response.status === 204) {
+      if (method === "DELETE" && response.status === 204) {
         return ok(null as T);
       }
 
@@ -240,6 +200,38 @@ class ApiClient {
         details: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  async get<T>(endpoint: string, options?: RequestOptions): Promise<Result<T>> {
+    return this.request<T>("GET", endpoint, undefined, options);
+  }
+
+  async post<T>(
+    endpoint: string,
+    body?: unknown,
+    options?: RequestOptions
+  ): Promise<Result<T>> {
+    return this.request<T>("POST", endpoint, body, options);
+  }
+
+  async put<T>(
+    endpoint: string,
+    body?: unknown,
+    options?: RequestOptions
+  ): Promise<Result<T>> {
+    return this.request<T>("PUT", endpoint, body, options);
+  }
+
+  async patch<T>(
+    endpoint: string,
+    body?: unknown,
+    options?: RequestOptions
+  ): Promise<Result<T>> {
+    return this.request<T>("PATCH", endpoint, body, options);
+  }
+
+  async delete<T>(endpoint: string, options?: RequestOptions): Promise<Result<T>> {
+    return this.request<T>("DELETE", endpoint, undefined, options);
   }
 }
 

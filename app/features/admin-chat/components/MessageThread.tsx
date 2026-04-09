@@ -93,13 +93,41 @@ export function RoomThread({ messages, isLoading }: RoomThreadProps) {
   );
 }
 
+// ─── Admin reply bubble (reusable) ───────────────────────────────────────────
+
+function AdminReplyBubble({ text, time }: { text: string; time?: string }) {
+  return (
+    <div className="flex gap-2 max-w-[78%] ml-auto flex-row-reverse">
+      <div className="w-7 h-7 rounded-full bg-teal-700 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 self-end">
+        A
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <div className="px-3 py-2 text-[12px] leading-relaxed bg-teal-700 text-white rounded-xl rounded-tr-sm">
+          {text}
+        </div>
+        {time && (
+          <span className="text-[10px] text-gray-400 px-0.5 text-right">{time}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Pending thread ───────────────────────────────────────────────────────────
 
 interface PendingThreadProps {
   pending: PendingMessage;
+  /** Additional replies sent this session (not yet persisted to the backend model) */
+  extraReplies?: string[];
 }
 
-export function PendingThread({ pending }: PendingThreadProps) {
+export function PendingThread({ pending, extraReplies = [] }: PendingThreadProps) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [pending.adminReply, extraReplies.length]);
+
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50/60">
       {/* User message */}
@@ -115,30 +143,20 @@ export function PendingThread({ pending }: PendingThreadProps) {
         </div>
       </div>
 
-      {/* Admin reply */}
+      {/* First admin reply (from backend model) */}
       {pending.adminReply && (
-        <div className="flex gap-2 max-w-[78%] ml-auto flex-row-reverse">
-          <div className="w-7 h-7 rounded-full bg-teal-700 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 self-end">
-            A
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <div className="px-3 py-2 text-[12px] leading-relaxed bg-teal-700 text-white rounded-xl rounded-tr-sm">
-              {pending.adminReply}
-            </div>
-            {pending.repliedAt && (
-              <span className="text-[10px] text-gray-400 px-0.5 text-right">{formatIso(pending.repliedAt)}</span>
-            )}
-          </div>
-        </div>
+        <AdminReplyBubble
+          text={pending.adminReply}
+          time={pending.repliedAt ? formatIso(pending.repliedAt) : undefined}
+        />
       )}
 
-      {pending.status === "Replied" && (
-        <div className="flex justify-center pt-2">
-          <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
-            Đã phản hồi
-          </span>
-        </div>
-      )}
+      {/* Subsequent replies sent this session */}
+      {extraReplies.map((r, i) => (
+        <AdminReplyBubble key={i} text={r} />
+      ))}
+
+      <div ref={bottomRef} />
     </div>
   );
 }

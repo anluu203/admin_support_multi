@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { cn } from "@/app/utils/cn";
 import { ConversationList } from "./ConversationList";
 import { RoomThread, PendingThread } from "./MessageThread";
@@ -193,7 +193,7 @@ export function LiveChatPage() {
 
   // ── Firebase: list of open chat rooms ─────────────────────────────────
   const { rooms: firebaseRooms, isLoading: isLoadingRooms } = useFirebaseChatList(mounted);
-  const sessions = firebaseRooms.map(mapFirebaseRoom);
+  const sessions = useMemo(() => firebaseRooms.map(mapFirebaseRoom), [firebaseRooms]);
 
   // ── REST: pending messages ─────────────────────────────────────────────
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
@@ -206,8 +206,19 @@ export function LiveChatPage() {
       adminChatApi.getPendingMessages({ status: "Pending", pageSize: 50 }),
       adminChatApi.getPendingCount(),
     ]);
-    // data is PendingMessage[] directly (not wrapped in { messages: [] })
-    if (res.isSuccess) setPendingMessages(Array.isArray(res.data) ? res.data : []);
+    if (res.isSuccess) {
+      const fresh = Array.isArray(res.data) ? res.data : [];
+      // Merge: keep non-Pending messages already in state (e.g. Replied ones that
+      // admin is still viewing) so the sidebar doesn't lose them between polls.
+      setPendingMessages((prev) => {
+        const kept = prev.filter((p) => p.status !== "Pending");
+        const merged = [...fresh];
+        kept.forEach((k) => {
+          if (!merged.some((m) => m.id === k.id)) merged.push(k);
+        });
+        return merged;
+      });
+    }
     if (cnt.isSuccess) setPendingCount(cnt.data.count);
     setIsLoadingPending(false);
   }, []);
@@ -227,6 +238,11 @@ export function LiveChatPage() {
   const [roomMsgs, setRoomMsgs] = useState<FirebaseChatMessage[]>([]);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
   const seenIds = useRef(new Set<string>());
+
+  // Subsequent admin replies for pending messages (beyond the first).
+  // The backend model only stores one adminReply; extra replies are kept
+  // in local session state so the thread shows the full conversation.
+  const [pendingExtraReplies, setPendingExtraReplies] = useState<Record<string, string[]>>({});
 
   // Quick-reply pre-fill
   const [prefilledText, setPrefilledText] = useState("");
@@ -272,22 +288,35 @@ export function LiveChatPage() {
     if (!active || !text.trim()) return;
 
     if (active.kind === "room") {
-      // Write to Firebase directly for instant delivery
+      // Write directly to Firebase for instant delivery.
+      // The REST API call is intentionally removed: it's documented as optional
+      // ("Admin có thể gửi trực tiếp qua Firebase SDK") and causes duplicate
+      // messages when the backend also writes to Firebase with a different key.
       await sendFirebaseMsg(text, admin.id);
-      // Also persist via API (writes to PostgreSQL + Firebase again but backend deduplicates)
-      await adminChatApi.sendFirebaseMessage(active.session.chatId, text);
     } else {
-      await adminChatApi.replyPending(active.pending.id, text);
-      const updated = {
-        ...active.pending,
-        adminReply: text,
-        status: "Replied" as const,
-        repliedAt: new Date().toISOString(),
-      };
-      setActive({ kind: "pending", pending: updated });
-      setPendingMessages((prev) =>
-        prev.map((p) => (p.id === active.pending.id ? updated : p))
-      );
+      const result = await adminChatApi.replyPending(active.pending.id, text);
+      if (!result.isSuccess) return; // Don't update UI if API failed
+
+      if (!active.pending.adminReply) {
+        // First reply: update the pending record's adminReply field
+        const updated = {
+          ...active.pending,
+          adminReply: text,
+          status: "Replied" as const,
+          repliedAt: new Date().toISOString(),
+        };
+        setActive({ kind: "pending", pending: updated });
+        setPendingMessages((prev) =>
+          prev.map((p) => (p.id === active.pending.id ? updated : p))
+        );
+      } else {
+        // Subsequent replies: accumulate in local session state so the thread
+        // shows the full back-and-forth without needing a backend model change.
+        setPendingExtraReplies((prev) => ({
+          ...prev,
+          [active.pending.id]: [...(prev[active.pending.id] ?? []), text],
+        }));
+      }
     }
   };
 
@@ -349,7 +378,10 @@ export function LiveChatPage() {
               {active.kind === "room" ? (
                 <RoomThread messages={roomMsgs} isLoading={isLoadingMsgs} />
               ) : (
-                <PendingThread pending={active.pending} />
+                <PendingThread
+                  pending={active.pending}
+                  extraReplies={pendingExtraReplies[active.pending.id] ?? []}
+                />
               )}
 
               <ChatInputBar

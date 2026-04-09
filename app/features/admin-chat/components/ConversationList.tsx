@@ -130,7 +130,15 @@ export function ConversationList({
   const visibleSessions = tab === "pending" ? [] : sessions;
   const visiblePending = tab === "realtime" ? [] : pendingMessages;
   const isEmpty = visibleSessions.length === 0 && visiblePending.length === 0;
-  const isLoading = (tab !== "pending" && isLoadingRooms) || (tab !== "realtime" && isLoadingPending);
+
+  // Only show skeleton on INITIAL load (no data yet).
+  // Do NOT replace loaded content with skeleton on subsequent refreshes —
+  // loadPending polls every 30s and would flash the whole list to skeleton
+  // every interval while isLoadingPending is briefly true.
+  const hasAnyData = sessions.length > 0 || pendingMessages.length > 0;
+  const isInitialLoading =
+    !hasAnyData &&
+    ((tab !== "pending" && isLoadingRooms) || (tab !== "realtime" && isLoadingPending));
 
   const tabs: { key: TabKey; label: string; count?: number }[] = [
     { key: "all", label: "Tất cả", count: sessions.length + pendingCount || undefined },
@@ -168,7 +176,7 @@ export function ConversationList({
 
       {/* Items */}
       <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
+        {isInitialLoading ? (
           <LoadingSkeleton />
         ) : isEmpty ? (
           <EmptyState tab={tab} />

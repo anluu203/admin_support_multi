@@ -36,7 +36,7 @@ export function ChatInputBar({
     }
   }, [prefilledText, onPrefilledConsumed]);
 
-  const canSend = text.trim().length > 0 && !disabled && !isSending && !alreadyReplied;
+  const canSend = text.trim().length > 0 && !disabled && !isSending;
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -58,17 +58,11 @@ export function ChatInputBar({
     }
   };
 
-  if (alreadyReplied) {
-    return (
-      <div className="px-4 py-3 border-t border-gray-200 bg-white">
-        <p className="text-[12px] text-gray-400 text-center">Đã phản hồi tin nhắn này.</p>
-      </div>
-    );
-  }
-
   const modeBannerText =
     mode === "firebase"
       ? "Realtime · tin nhắn gửi ngay đến khách"
+      : mode === "pending" && alreadyReplied
+      ? "Đã phản hồi · tiếp tục nhắn để gửi thêm"
       : mode === "pending"
       ? "Offline queue · khách sẽ nhận khi online"
       : null;
@@ -78,7 +72,11 @@ export function ChatInputBar({
       {modeBannerText && (
         <div className={cn(
           "px-4 py-1.5 text-[10px] font-semibold border-b border-gray-100",
-          mode === "firebase" ? "text-blue-600 bg-blue-50/60" : "text-amber-600 bg-amber-50/60"
+          mode === "firebase"
+            ? "text-blue-600 bg-blue-50/60"
+            : alreadyReplied
+            ? "text-green-700 bg-green-50/60"
+            : "text-amber-600 bg-amber-50/60"
         )}>
           {modeBannerText}
         </div>
