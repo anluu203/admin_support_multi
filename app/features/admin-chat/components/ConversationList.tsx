@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/app/lib/utils/cn";
 import type { AdminChatSession, PendingMessage } from "../types/adminChat";
 
 type TabKey = "all" | "realtime" | "pending";
