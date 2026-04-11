@@ -15,7 +15,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Users, label: "Phân quyền", href: "/phan-quyen" },
   { icon: Settings, label: "Cài đặt", href: "/cai-dat" },
-  { icon: MessageCircle, label: "Quản lý chat", href: "/chat" },
+  { icon: MessageCircle, label: "Quản lý chat", href: "/dashboard/chat" },
 ];
 
 export default function ProtectedSidebar({
