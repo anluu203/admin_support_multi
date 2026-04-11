@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/app/lib/utils/cn";
 import { MessageSearch } from "./MessageSearch";
 import type { FirebaseChatMessage, PendingMessage } from "../types/adminChat";
 

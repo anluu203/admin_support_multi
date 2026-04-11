@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/app/lib/utils/cn";
 import { ConversationList } from "./ConversationList";
 import { RoomThread, PendingThread } from "./MessageThread";
 import { ChatInputBar } from "./ChatInputBar";
@@ -16,6 +16,7 @@ import {
   type FirebaseChatMessage,
   type PendingMessage,
 } from "../types/adminChat";
+import Link from "next/link";
 
 // ─── Admin info (client-only) ─────────────────────────────────────────────────
 
@@ -30,13 +31,19 @@ function readAdminFromStorage(): AdminInfo {
   try {
     const raw = localStorage.getItem("user");
     if (raw) {
-      const u = JSON.parse(raw) as { id?: string | number; username?: string; fullName?: string };
+      const u = JSON.parse(raw) as {
+        id?: string | number;
+        username?: string;
+        fullName?: string;
+      };
       return {
         id: String(u.id ?? "admin_local"),
         displayName: u.fullName ?? u.username ?? "Admin",
       };
     }
-  } catch {/* ignore */}
+  } catch {
+    /* ignore */
+  }
   return FALLBACK_ADMIN;
 }
 
@@ -58,13 +65,17 @@ function ChatHeader({
     return (
       <div className="h-14 border-b border-gray-200 bg-white flex items-center px-5 flex-shrink-0">
         <ChatBubbleIcon className="w-4 h-4 text-gray-300 mr-2" />
-        <span className="text-[13px] text-gray-400">Chọn một hội thoại để bắt đầu</span>
+        <span className="text-[13px] text-gray-400">
+          Chọn một hội thoại để bắt đầu
+        </span>
       </div>
     );
   }
 
   const isRoom = active.kind === "room";
-  const name = isRoom ? active.session.displayName : (active.pending.userName ?? "Khách");
+  const name = isRoom
+    ? active.session.displayName
+    : (active.pending.userName ?? "Khách");
   const sub = isRoom
     ? `Chat #${active.session.chatId.slice(-8)}`
     : `Tin nhắn offline · ${active.pending.createdAt ? new Date(active.pending.createdAt).toLocaleString("vi-VN") : ""}`;
@@ -72,10 +83,17 @@ function ChatHeader({
   return (
     <div className="h-14 border-b border-gray-200 bg-white flex items-center gap-3 px-4 flex-shrink-0">
       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700 flex-shrink-0">
-        {name.split(" ").map((w) => w[0]).slice(-2).join("").toUpperCase()}
+        {name
+          .split(" ")
+          .map((w) => w[0])
+          .slice(-2)
+          .join("")
+          .toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold text-gray-900 truncate">{name}</p>
+        <p className="text-[13px] font-semibold text-gray-900 truncate">
+          {name}
+        </p>
         <p className="text-[11px] text-gray-400 truncate">{sub}</p>
       </div>
 
@@ -85,13 +103,17 @@ function ChatHeader({
           Realtime
         </span>
       ) : (
-        <span className={cn(
-          "text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0",
-          active.pending.status === "Replied"
-            ? "bg-green-50 text-green-700"
-            : "bg-amber-50 text-amber-700"
-        )}>
-          {active.pending.status === "Replied" ? "Đã phản hồi" : "Offline queue"}
+        <span
+          className={cn(
+            "text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0",
+            active.pending.status === "Replied"
+              ? "bg-green-50 text-green-700"
+              : "bg-amber-50 text-amber-700",
+          )}
+        >
+          {active.pending.status === "Replied"
+            ? "Đã phản hồi"
+            : "Offline queue"}
         </span>
       )}
 
@@ -147,24 +169,36 @@ function InfoPanel({
           ["Chat ID", active.session.chatId.slice(-10)],
           ["User ID", active.session.userId.slice(-10)],
           ["Câu hỏi đầu", active.session.userQuestion || "—"],
-          ["Thời gian", new Date(active.session.createdAt).toLocaleString("vi-VN")],
+          [
+            "Thời gian",
+            new Date(active.session.createdAt).toLocaleString("vi-VN"),
+          ],
         ]
       : [
           ["Session", active.pending.sessionId.slice(-10)],
           ["Trạng thái", active.pending.status],
-          ["Thời gian", active.pending.createdAt ? new Date(active.pending.createdAt).toLocaleString("vi-VN") : "—"],
+          [
+            "Thời gian",
+            active.pending.createdAt
+              ? new Date(active.pending.createdAt).toLocaleString("vi-VN")
+              : "—",
+          ],
         ];
 
   return (
     <div className="w-52 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0 flex flex-col">
       {/* Info */}
       <div className="px-4 py-3 border-b border-gray-100">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Thông tin</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
+          Thông tin
+        </p>
         <div className="space-y-2.5">
           {rows.map(([k, v]) => (
             <div key={k}>
               <p className="text-[10px] text-gray-400">{k}</p>
-              <p className="text-[11px] font-semibold text-gray-800 break-all leading-snug">{v}</p>
+              <p className="text-[11px] font-semibold text-gray-800 break-all leading-snug">
+                {v}
+              </p>
             </div>
           ))}
         </div>
@@ -172,7 +206,9 @@ function InfoPanel({
 
       {/* Quick replies */}
       <div className="px-4 py-3 flex-1">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">Trả lời nhanh</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">
+          Trả lời nhanh
+        </p>
         {QUICK_REPLIES.map((r) => (
           <button
             key={r}
@@ -193,7 +229,9 @@ function EmptyPanel() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/60 gap-3 select-none">
       <ChatBubbleIcon className="w-14 h-14 text-gray-200" />
-      <p className="text-[13px] text-gray-400 font-medium">Chọn một hội thoại</p>
+      <p className="text-[13px] text-gray-400 font-medium">
+        Chọn một hội thoại
+      </p>
       <p className="text-[11px] text-gray-300 text-center max-w-xs">
         Realtime chats xuất hiện khi AI không trả lời được và admin đang online.
         Pending queue là tin nhắn khi admin offline.
@@ -215,8 +253,12 @@ export function LiveChatPage() {
   }, []);
 
   // ── Firebase: list of open chat rooms ─────────────────────────────────
-  const { rooms: firebaseRooms, isLoading: isLoadingRooms } = useFirebaseChatList(mounted);
-  const sessions = useMemo(() => firebaseRooms.map(mapFirebaseRoom), [firebaseRooms]);
+  const { rooms: firebaseRooms, isLoading: isLoadingRooms } =
+    useFirebaseChatList(mounted);
+  const sessions = useMemo(
+    () => firebaseRooms.map(mapFirebaseRoom),
+    [firebaseRooms],
+  );
 
   // ── REST: pending messages ─────────────────────────────────────────────
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
@@ -254,7 +296,11 @@ export function LiveChatPage() {
   }, [mounted, loadPending]);
 
   // ── Admin presence ─────────────────────────────────────────────────────
-  useAdminPresence({ adminId: admin.id, displayName: admin.displayName, enabled: mounted });
+  useAdminPresence({
+    adminId: admin.id,
+    displayName: admin.displayName,
+    enabled: mounted,
+  });
 
   // ── Active conversation ────────────────────────────────────────────────
   const [active, setActive] = useState<ActiveConv>(null);
@@ -268,7 +314,9 @@ export function LiveChatPage() {
   // Subsequent admin replies for pending messages (beyond the first).
   // The backend model only stores one adminReply; extra replies are kept
   // in local session state so the thread shows the full conversation.
-  const [pendingExtraReplies, setPendingExtraReplies] = useState<Record<string, string[]>>({});
+  const [pendingExtraReplies, setPendingExtraReplies] = useState<
+    Record<string, string[]>
+  >({});
 
   // Quick-reply pre-fill
   const [prefilledText, setPrefilledText] = useState("");
@@ -352,7 +400,7 @@ export function LiveChatPage() {
         };
         setActive({ kind: "pending", pending: updated });
         setPendingMessages((prev) =>
-          prev.map((p) => (p.id === active.pending.id ? updated : p))
+          prev.map((p) => (p.id === active.pending.id ? updated : p)),
         );
       } else {
         // Subsequent replies: accumulate in local session state so the thread
@@ -369,8 +417,8 @@ export function LiveChatPage() {
     active?.kind === "room"
       ? `r:${active.session.chatId}`
       : active?.kind === "pending"
-      ? `p:${active.pending.id}`
-      : null;
+        ? `p:${active.pending.id}`
+        : null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
@@ -383,7 +431,9 @@ export function LiveChatPage() {
               <ChatBubbleIcon className="w-3.5 h-3.5 text-white" />
             </div>
             <div>
-              <p className="text-[13px] font-bold text-gray-900 leading-tight">Live Chat</p>
+              <p className="text-[13px] font-bold text-gray-900 leading-tight">
+                Live Chat
+              </p>
               <p className="text-[10px] text-gray-400">Hội thoại khách hàng</p>
             </div>
           </div>
@@ -392,8 +442,12 @@ export function LiveChatPage() {
           {mounted && (
             <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
-              <span className="text-[11px] font-semibold text-green-700 truncate">{admin.displayName}</span>
-              <span className="text-[10px] text-green-500 ml-auto flex-shrink-0">Online</span>
+              <span className="text-[11px] font-semibold text-green-700 truncate">
+                {admin.displayName}
+              </span>
+              <span className="text-[10px] text-green-500 ml-auto flex-shrink-0">
+                Online
+              </span>
             </div>
           )}
         </div>
@@ -431,7 +485,10 @@ export function LiveChatPage() {
 
               <ChatInputBar
                 mode={active.kind === "room" ? "firebase" : "pending"}
-                alreadyReplied={active.kind === "pending" && active.pending.status === "Replied"}
+                alreadyReplied={
+                  active.kind === "pending" &&
+                  active.pending.status === "Replied"
+                }
                 onSend={handleSend}
                 prefilledText={prefilledText}
                 onPrefilledConsumed={() => setPrefilledText("")}
@@ -454,7 +511,13 @@ export function LiveChatPage() {
 
 function ChatBubbleIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
       <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
     </svg>
   );

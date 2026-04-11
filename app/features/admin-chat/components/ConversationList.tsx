@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/app/lib/utils/cn";
 import type { AdminChatSession, PendingMessage } from "../types/adminChat";
 import { Search, X } from "lucide-react";
 

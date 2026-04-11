@@ -1,7 +1,7 @@
 "use client";
 
+import { cn } from "@/app/lib/utils/cn";
 import { useState, useRef, useEffect } from "react";
-import { cn } from "@/app/utils/cn";
 
 interface ChatInputBarProps {
   onSend: (text: string) => Promise<void>;

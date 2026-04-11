@@ -1,7 +1,7 @@
 "use client"; // Bắt buộc phải có vì dùng hook
 
 import { Button, Divider } from "@/app/components";
-import { LayoutDashboard, LogOut, Settings, Users, Ticket } from "lucide-react";
+import { LayoutDashboard, LogOut, Settings, Users, Ticket, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation"; 
 
@@ -15,7 +15,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Users, label: "Phân quyền", href: "/phan-quyen" },
   { icon: Settings, label: "Cài đặt", href: "/cai-dat" },
-  { icon: Ticket, label: "Tickets", href: "/tickets" },
+  { icon: MessageCircle, label: "Quản lý chat", href: "/chat" },
 ];
 
 export default function ProtectedSidebar({
