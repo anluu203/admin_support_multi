@@ -33,7 +33,7 @@ export function getDb(): Database | null {
   }
   if (!_db) {
     try {
-      _db = getDatabase(getApp());
+      _db = getDatabase(getApp(), process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL);
       console.info("[Firebase] ✅ Kết nối thành công:", process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL);
     } catch (e) {
       console.error("[Firebase] ❌ Khởi tạo Database thất bại:", e);
