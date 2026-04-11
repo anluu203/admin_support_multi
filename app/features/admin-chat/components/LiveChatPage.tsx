@@ -358,6 +358,12 @@ export function LiveChatPage() {
     const cached = roomMessagesCache.current[chatId] ?? [];
     setRoomMsgs(cached);
 
+    // Restore seenIds cache from the cached messages
+    // This prevents Firebase listener from re-emitting them as duplicates
+    if (!seenIdsCache.current[chatId]) {
+      seenIdsCache.current[chatId] = new Set(cached.map((m) => m.id));
+    }
+
     setActive({ kind: "room", session });
     setIsLoadingMsgs(false);
     setPrefilledText("");
