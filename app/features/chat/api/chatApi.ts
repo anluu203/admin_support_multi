@@ -6,6 +6,13 @@ import type {
 
 const BASE = "/chat";
 
+export interface NotificationResponse {
+  reply: string;
+  repliedAt: string;
+  pendingId: string;
+  status: "Replied" | "Closed";
+}
+
 export const chatApi = {
   createRoom: (payload: {
     userId: string;
@@ -35,4 +42,10 @@ export const chatApi = {
 
   closeRoom: (roomId: string, closedBy: number | "system", reason: string) =>
     apiClient.put(`${BASE}/rooms/${roomId}/close`, { closedBy, reason }),
+
+  /** Poll for admin replies to pending offline messages */
+  getNotification: (sessionId: string) =>
+    apiClient.get<NotificationResponse | null>(`${BASE}/notifications`, {
+      params: { sessionId },
+    }),
 };

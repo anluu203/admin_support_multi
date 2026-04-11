@@ -47,7 +47,9 @@ export function ChatInputBar({
       await onSend(msg);
     } finally {
       setIsSending(false);
-      textareaRef.current?.focus();
+      // Defer focus until after React re-enables the textarea (disabled → enabled
+      // happens in the next render cycle triggered by setIsSending(false)).
+      setTimeout(() => textareaRef.current?.focus(), 0);
     }
   };
 
@@ -59,9 +61,7 @@ export function ChatInputBar({
   };
 
   const modeBannerText =
-    mode === "firebase"
-      ? "Realtime · tin nhắn gửi ngay đến khách"
-      : mode === "pending" && alreadyReplied
+    mode === "pending" && alreadyReplied
       ? "Đã phản hồi · tiếp tục nhắn để gửi thêm"
       : mode === "pending"
       ? "Offline queue · khách sẽ nhận khi online"

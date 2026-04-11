@@ -19,8 +19,12 @@ export function useFirebaseChat({ roomId, enabled, onMessage }: UseFirebaseChatO
   useEffect(() => {
     if (!roomId || !enabled) return;
     const db = getDb();
-    if (!db) return;
+    if (!db) {
+      console.warn("[useFirebaseChat] ❌ db null — listener không được đăng ký.");
+      return;
+    }
 
+    console.info(`[useFirebaseChat] 🔗 Đăng ký listener tại messages/${roomId}`);
     const messagesRef = ref(db, `messages/${roomId}`);
 
     listenerRef.current = onChildAdded(messagesRef, (snapshot) => {
@@ -38,13 +42,14 @@ export function useFirebaseChat({ roomId, enabled, onMessage }: UseFirebaseChatO
         createdAt: data.createdAt ?? Date.now(),
       };
 
-      // Skip internal notes — not for user
       if (message.isInternalNote) return;
 
+      console.info(`[useFirebaseChat] 📨 Nhận tin nhắn từ ${message.senderType}:`, message.messageText);
       onMessageRef.current(message);
     });
 
     return () => {
+      console.info(`[useFirebaseChat] 🔌 Hủy listener tại messages/${roomId}`);
       off(messagesRef, "child_added");
     };
   }, [roomId, enabled]);
@@ -53,7 +58,11 @@ export function useFirebaseChat({ roomId, enabled, onMessage }: UseFirebaseChatO
     async (text: string, senderId: string, senderType: SenderType) => {
       if (!roomId) return;
       const db = getDb();
-      if (!db) return;
+      if (!db) {
+        console.warn("[useFirebaseChat] ❌ push thất bại — db null.");
+        return;
+      }
+      console.info(`[useFirebaseChat] 📤 Push tin nhắn lên messages/${roomId}:`, text);
       const messagesRef = ref(db, `messages/${roomId}`);
       await push(messagesRef, {
         senderType,
@@ -63,6 +72,7 @@ export function useFirebaseChat({ roomId, enabled, onMessage }: UseFirebaseChatO
         isInternalNote: false,
         createdAt: serverTimestamp(),
       });
+      console.info("[useFirebaseChat] ✅ Push thành công.");
     },
     [roomId]
   );
