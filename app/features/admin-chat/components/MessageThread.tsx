@@ -11,7 +11,7 @@ function Bubble({ msg }: { msg: FirebaseChatMessage }) {
   if (msg.sender === "system") {
     return (
       <div className="flex justify-center">
-        <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1 text-center max-w-xs">
+        <span className="text-[10px] sm:text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1 text-center max-w-xs">
           {msg.text}
         </span>
       </div>
@@ -21,10 +21,10 @@ function Bubble({ msg }: { msg: FirebaseChatMessage }) {
   const isAdmin = msg.sender === "admin";
 
   return (
-    <div className={cn("flex gap-2 max-w-[78%]", isAdmin ? "ml-auto flex-row-reverse" : "")}>
+    <div className={cn("flex gap-2 max-w-[85%] sm:max-w-[78%]", isAdmin ? "ml-auto flex-row-reverse" : "")}>
       <div
         className={cn(
-          "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 self-end",
+          "w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 self-end",
           isAdmin ? "bg-teal-700 text-white" : "bg-blue-100 text-blue-700"
         )}
       >
@@ -33,7 +33,7 @@ function Bubble({ msg }: { msg: FirebaseChatMessage }) {
       <div className="flex flex-col gap-0.5">
         <div
           className={cn(
-            "px-3 py-2 text-[12px] leading-relaxed rounded-xl",
+            "px-3 py-2 text-[11px] sm:text-[12px] leading-relaxed rounded-xl",
             isAdmin
               ? "bg-teal-700 text-white rounded-tr-sm"
               : "bg-white border border-gray-200 text-gray-900 rounded-tl-sm"
@@ -41,7 +41,7 @@ function Bubble({ msg }: { msg: FirebaseChatMessage }) {
         >
           {msg.text}
         </div>
-        <span className={cn("text-[10px] text-gray-400 px-0.5", isAdmin && "text-right")}>
+        <span className={cn("text-[9px] sm:text-[10px] text-gray-400 px-0.5", isAdmin && "text-right")}>
           {formatTs(msg.timestamp)}
         </span>
       </div>
@@ -131,16 +131,16 @@ export function RoomThread({ messages, isLoading }: RoomThreadProps) {
 
 function AdminReplyBubble({ text, time }: { text: string; time?: string }) {
   return (
-    <div className="flex gap-2 max-w-[78%] ml-auto flex-row-reverse">
-      <div className="w-7 h-7 rounded-full bg-teal-700 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 self-end">
+    <div className="flex gap-2 max-w-[85%] sm:max-w-[78%] ml-auto flex-row-reverse">
+      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-teal-700 flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0 self-end">
         A
       </div>
       <div className="flex flex-col gap-0.5">
-        <div className="px-3 py-2 text-[12px] leading-relaxed bg-teal-700 text-white rounded-xl rounded-tr-sm">
+        <div className="px-3 py-2 text-[11px] sm:text-[12px] leading-relaxed bg-teal-700 text-white rounded-xl rounded-tr-sm">
           {text}
         </div>
         {time && (
-          <span className="text-[10px] text-gray-400 px-0.5 text-right">{time}</span>
+          <span className="text-[9px] sm:text-[10px] text-gray-400 px-0.5 text-right">{time}</span>
         )}
       </div>
     </div>
@@ -165,15 +165,15 @@ export function PendingThread({ pending, extraReplies = [] }: PendingThreadProps
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50/60">
       {/* User message */}
-      <div className="flex gap-2 max-w-[78%]">
-        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-700 flex-shrink-0 self-end">
+      <div className="flex gap-2 max-w-[85%] sm:max-w-[78%]">
+        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-100 flex items-center justify-center text-[9px] font-bold text-blue-700 flex-shrink-0 self-end">
           U
         </div>
         <div className="flex flex-col gap-0.5">
-          <div className="px-3 py-2 text-[12px] leading-relaxed bg-white border border-gray-200 text-gray-900 rounded-xl rounded-tl-sm">
+          <div className="px-3 py-2 text-[11px] sm:text-[12px] leading-relaxed bg-white border border-gray-200 text-gray-900 rounded-xl rounded-tl-sm">
             {pending.userMessage}
           </div>
-          <span className="text-[10px] text-gray-400 px-0.5">{formatIso(pending.createdAt)}</span>
+          <span className="text-[9px] sm:text-[10px] text-gray-400 px-0.5">{formatIso(pending.createdAt)}</span>
         </div>
       </div>
 

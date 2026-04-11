@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { cn } from "@/app/lib/utils/cn";
+import { Menu, X, Info } from "lucide-react";
+import { useIsMobile } from "@/app/hooks/useIsMobile";
 import { ConversationList } from "./ConversationList";
 import { RoomThread, PendingThread } from "./MessageThread";
 import { ChatInputBar } from "./ChatInputBar";
@@ -243,6 +245,11 @@ function EmptyPanel() {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function LiveChatPage() {
+  // ── Mobile detection ──────────────────────────────────────────────────────
+  const isMobile = useIsMobile();
+  const [showMobileConvList, setShowMobileConvList] = useState(false);
+  const [showMobileInfoPanel, setShowMobileInfoPanel] = useState(false);
+
   // ── Defer localStorage to client ──────────────────────────────────────
   const [admin, setAdmin] = useState<AdminInfo>(FALLBACK_ADMIN);
   const [mounted, setMounted] = useState(false);
@@ -358,6 +365,12 @@ export function LiveChatPage() {
     const cached = roomMessagesCache.current[chatId] ?? [];
     setRoomMsgs(cached);
 
+    // Restore seenIds cache from the cached messages
+    // This prevents Firebase listener from re-emitting them as duplicates
+    if (!seenIdsCache.current[chatId]) {
+      seenIdsCache.current[chatId] = new Set(cached.map((m) => m.id));
+    }
+
     setActive({ kind: "room", session });
     setIsLoadingMsgs(false);
     setPrefilledText("");
@@ -422,51 +435,79 @@ export function LiveChatPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
-      {/* ── Sidebar ───────────────────────────────────────────────────── */}
-      <div className="w-[260px] bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0 space-y-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-              <ChatBubbleIcon className="w-3.5 h-3.5 text-white" />
+      {/* ── DESKTOP SIDEBAR (conditional render on desktop only) ─────────────────── */}
+      {!isMobile && (
+        <div className="w-[260px] bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0 space-y-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <ChatBubbleIcon className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-gray-900 leading-tight">
+                  Live Chat
+                </p>
+                <p className="text-[10px] text-gray-400">Hội thoại khách hàng</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[13px] font-bold text-gray-900 leading-tight">
-                Live Chat
-              </p>
-              <p className="text-[10px] text-gray-400">Hội thoại khách hàng</p>
-            </div>
+
+            {/* Online badge — only renders after mount to avoid hydration mismatch */}
+            {mounted && (
+              <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
+                <span className="text-[11px] font-semibold text-green-700 truncate">
+                  {admin.displayName}
+                </span>
+                <span className="text-[10px] text-green-500 ml-auto flex-shrink-0">
+                  Online
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Online badge — only renders after mount to avoid hydration mismatch */}
-          {mounted && (
-            <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
-              <span className="text-[11px] font-semibold text-green-700 truncate">
-                {admin.displayName}
-              </span>
-              <span className="text-[10px] text-green-500 ml-auto flex-shrink-0">
-                Online
-              </span>
-            </div>
-          )}
+          <ConversationList
+            sessions={sessions}
+            pendingMessages={pendingMessages}
+            activeKey={activeKey}
+            pendingCount={pendingCount}
+            isLoadingRooms={isLoadingRooms}
+            isLoadingPending={isLoadingPending}
+            onSelectSession={selectRoom}
+            onSelectPending={selectPending}
+          />
         </div>
+      )}
 
-        <ConversationList
-          sessions={sessions}
-          pendingMessages={pendingMessages}
-          activeKey={activeKey}
-          pendingCount={pendingCount}
-          isLoadingRooms={isLoadingRooms}
-          isLoadingPending={isLoadingPending}
-          onSelectSession={selectRoom}
-          onSelectPending={selectPending}
-        />
-      </div>
-
-      {/* ── Main area ─────────────────────────────────────────────────── */}
+      {/* ── MAIN AREA ──────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {/* Header with mobile buttons */}
         <ChatHeader active={active} onClose={handleClose} />
+
+        {/* Mobile hamburger & info buttons - visible only on mobile */}
+        {isMobile && (
+          <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-white">
+            <button
+              onClick={() => setShowMobileConvList(!showMobileConvList)}
+              className="p-2 rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+              aria-label="Show conversations"
+              title="Conversations"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            {active && (
+              <button
+                onClick={() => setShowMobileInfoPanel(!showMobileInfoPanel)}
+                className="p-2 rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+                aria-label="Show info panel"
+                title="Info"
+              >
+                <Info className="w-5 h-5" />
+              </button>
+            )}
+            <div className="flex-1" /> {/* Spacer */}
+          </div>
+        )}
 
         {!active ? (
           <EmptyPanel />
@@ -500,11 +541,92 @@ export function LiveChatPage() {
               />
             </div>
 
-            {/* Info panel */}
-            <InfoPanel active={active} onQuickReply={setPrefilledText} />
+            {/* Info panel - hidden on mobile/tablet (conditional render on desktop only) */}
+            {!isMobile && active && (
+              <div className="w-52 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0 flex flex-col">
+                <InfoPanel active={active} onQuickReply={setPrefilledText} />
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* ── MOBILE OVERLAY: Conversations Drawer ──────────────────────────── */}
+      {isMobile && showMobileConvList && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowMobileConvList(false)}
+            aria-hidden
+          />
+          {/* Drawer */}
+          <div className="fixed inset-y-0 left-0 w-72 bg-white border-r border-gray-200 z-50 flex flex-col shadow-lg">
+            {/* Close button */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0">
+              <span className="text-[13px] font-bold text-gray-900">Conversations</span>
+              <button
+                onClick={() => setShowMobileConvList(false)}
+                className="p-1 rounded hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
+                aria-label="Close drawer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Conversations List */}
+            <div className="flex-1 overflow-hidden">
+              <ConversationList
+                sessions={sessions}
+                pendingMessages={pendingMessages}
+                activeKey={activeKey}
+                pendingCount={pendingCount}
+                isLoadingRooms={isLoadingRooms}
+                isLoadingPending={isLoadingPending}
+                onSelectSession={(s) => {
+                  selectRoom(s);
+                  setShowMobileConvList(false); // Auto-close on selection
+                }}
+                onSelectPending={(p) => {
+                  selectPending(p);
+                  setShowMobileConvList(false); // Auto-close on selection
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── MOBILE OVERLAY: Info Panel Drawer ────────────────────────────── */}
+      {isMobile && showMobileInfoPanel && active && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setShowMobileInfoPanel(false)}
+            aria-hidden
+          />
+          {/* Drawer */}
+          <div className="fixed inset-y-0 right-0 w-72 bg-white border-l border-gray-200 z-50 flex flex-col shadow-lg">
+            {/* Close button */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0">
+              <span className="text-[13px] font-bold text-gray-900">Details</span>
+              <button
+                onClick={() => setShowMobileInfoPanel(false)}
+                className="p-1 rounded hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
+                aria-label="Close drawer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Info Panel Content */}
+            <div className="flex-1 overflow-y-auto">
+              <InfoPanel active={active} onQuickReply={setPrefilledText} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
