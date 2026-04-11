@@ -3,7 +3,7 @@ import { UserRole } from "@/app/types/user";
 /**
  * Query parameters cho API lấy danh sách users
  */
-export interface UserQueryParams {
+export interface UserQueryParams extends Record<string, string | number | boolean | undefined> {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;

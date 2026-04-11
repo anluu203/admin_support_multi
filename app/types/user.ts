@@ -10,7 +10,7 @@ export enum UserStatus {
   Suspended = "Suspended",
 }
 
-export interface User {
+export interface User extends Record<string, unknown> {
   id: string;
   email: string;
   username: string;
