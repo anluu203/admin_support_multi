@@ -1,9 +1,16 @@
 "use client"; // Bắt buộc phải có vì dùng hook
 
 import { Button, Divider } from "@/app/components";
-import { LayoutDashboard, LogOut, Settings, Users, Ticket, MessageCircle } from "lucide-react";
+import {
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Users,
+  Ticket,
+  MessageCircle,
+} from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; 
+import { usePathname } from "next/navigation";
 
 interface ProtectedSidebarProps {
   onLogout?: () => void;
@@ -15,12 +22,10 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Users, label: "Phân quyền", href: "/phan-quyen" },
   { icon: Settings, label: "Cài đặt", href: "/cai-dat" },
-  { icon: MessageCircle, label: "Quản lý chat", href: "/chat" },
+  { icon: MessageCircle, label: "Quản lý chat", href: "/dashboard/chat" },
 ];
 
-export default function ProtectedSidebar({
-  onLogout,
-}: ProtectedSidebarProps) {
+export default function ProtectedSidebar({ onLogout }: ProtectedSidebarProps) {
   const pathname = usePathname();
 
   const checkActive = (href: string) => {
@@ -50,7 +55,7 @@ export default function ProtectedSidebar({
 
           return (
             <Link
-              key={item.href} 
+              key={item.href}
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 isActive
@@ -58,9 +63,9 @@ export default function ProtectedSidebar({
                   : "text-slate-600 hover:bg-background-muted"
               }`}
             >
-              <Icon 
-                size={20} 
-                className={`${isActive ? "text-primary" : "text-slate-400 group-hover:text-primary"}`} 
+              <Icon
+                size={20}
+                className={`${isActive ? "text-primary" : "text-slate-400 group-hover:text-primary"}`}
               />
               <span>{item.label}</span>
             </Link>
