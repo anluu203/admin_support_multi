@@ -49,6 +49,11 @@ function ChatHeader({
   active: ActiveConv;
   onClose: () => void;
 }) {
+  const [confirming, setConfirming] = useState(false);
+
+  // Reset confirm state whenever the active conversation changes
+  useEffect(() => { setConfirming(false); }, [active]);
+
   if (!active) {
     return (
       <div className="h-14 border-b border-gray-200 bg-white flex items-center px-5 flex-shrink-0">
@@ -90,12 +95,30 @@ function ChatHeader({
         </span>
       )}
 
-      <button
-        onClick={onClose}
-        className="text-[11px] font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg px-3 py-1.5 transition-colors flex-shrink-0"
-      >
-        Đóng
-      </button>
+      {confirming ? (
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] text-red-600 font-semibold">Kết thúc hội thoại?</span>
+          <button
+            onClick={() => { setConfirming(false); onClose(); }}
+            className="text-[11px] font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg px-2.5 py-1.5 transition-colors"
+          >
+            Xác nhận
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="text-[11px] font-semibold text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg px-2.5 py-1.5 transition-colors"
+          >
+            Hủy
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setConfirming(true)}
+          className="text-[11px] font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg px-3 py-1.5 transition-colors flex-shrink-0"
+        >
+          Kết thúc
+        </button>
+      )}
     </div>
   );
 }
@@ -237,7 +260,10 @@ export function LiveChatPage() {
   const [active, setActive] = useState<ActiveConv>(null);
   const [roomMsgs, setRoomMsgs] = useState<FirebaseChatMessage[]>([]);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
-  const seenIds = useRef(new Set<string>());
+
+  // Cache messages per room so they persist when switching conversations
+  const roomMessagesCache = useRef<Record<string, FirebaseChatMessage[]>>({});
+  const seenIdsCache = useRef<Record<string, Set<string>>>({});
 
   // Subsequent admin replies for pending messages (beyond the first).
   // The backend model only stores one adminReply; extra replies are kept
@@ -253,26 +279,45 @@ export function LiveChatPage() {
   const { sendMessage: sendFirebaseMsg } = useAdminChatRoom({
     chatRoomId: activeChatId,
     onMessage: useCallback((msg: FirebaseChatMessage) => {
-      if (seenIds.current.has(msg.id)) return;
-      seenIds.current.add(msg.id);
+      if (!activeChatId) return;
+
+      // Ensure cache entry exists
+      if (!seenIdsCache.current[activeChatId]) {
+        seenIdsCache.current[activeChatId] = new Set();
+      }
+
+      // Skip duplicate messages
+      if (seenIdsCache.current[activeChatId].has(msg.id)) return;
+      seenIdsCache.current[activeChatId].add(msg.id);
+
+      // Update cache
+      if (!roomMessagesCache.current[activeChatId]) {
+        roomMessagesCache.current[activeChatId] = [];
+      }
+      roomMessagesCache.current[activeChatId].push(msg);
+
+      // Update display
       setRoomMsgs((prev) => [...prev, msg]);
-    }, []),
+    }, [activeChatId]),
   });
 
   // ── Handlers ───────────────────────────────────────────────────────────
 
   const selectRoom = useCallback((session: AdminChatSession) => {
+    const chatId = session.chatId;
+
+    // Restore cached messages for this room, or empty if first load
+    const cached = roomMessagesCache.current[chatId] ?? [];
+    setRoomMsgs(cached);
+
     setActive({ kind: "room", session });
-    setRoomMsgs([]);
-    seenIds.current = new Set();
     setIsLoadingMsgs(false);
     setPrefilledText("");
   }, []);
 
   const selectPending = useCallback((pending: PendingMessage) => {
     setActive({ kind: "pending", pending });
-    setRoomMsgs([]);
-    seenIds.current = new Set();
+    setRoomMsgs([]); // Pending messages don't use Firebase, clear display
     setPrefilledText("");
   }, []);
 
@@ -281,7 +326,7 @@ export function LiveChatPage() {
       await adminChatApi.closeFirebaseRoom(active.session.chatId);
     }
     setActive(null);
-    setRoomMsgs([]);
+    // Keep room messages in cache for later viewing
   };
 
   const handleSend = async (text: string) => {

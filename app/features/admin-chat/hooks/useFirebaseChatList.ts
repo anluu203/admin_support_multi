@@ -61,12 +61,13 @@ export function useFirebaseChatList(enabled: boolean) {
     if (!enabled) return;
     const db = getDb();
     if (!db) {
+      console.warn("[useFirebaseChatList] ❌ db null — không thể lắng nghe danh sách phòng.");
       setIsLoading(false);
       return;
     }
 
+    console.info("[useFirebaseChatList] 🔗 Đăng ký listener tại /chats");
     const chatsRef = ref(db, "chats");
-    // Unsubscribe functions keyed by chatId for per-room metadata listeners
     const metaUnsubs = new Map<string, () => void>();
     let initialLoadDone = false;
 
@@ -77,11 +78,8 @@ export function useFirebaseChatList(enabled: boolean) {
       const val = snapshot.val() ?? {};
       const meta = val.metadata as Record<string, unknown> | undefined;
 
-      // Always add the room immediately — even if the backend hasn't written
-      // metadata yet (two-step create: messages first, metadata second).
-      // Using status "open" as the safe default since onChildAdded at /chats/
-      // fires when a room is first created. The per-room onValue below will
-      // overwrite with the real metadata as soon as it's available.
+      console.info(`[useFirebaseChatList] 🆕 Phòng mới/load: ${chatId}`, meta ?? "(chưa có metadata)");
+
       upsertRoom(chatId, meta ?? {
         status: "open",
         userId: chatId,
@@ -90,22 +88,22 @@ export function useFirebaseChatList(enabled: boolean) {
         unreadCount: 0,
       });
 
-      // Set up a lightweight per-room listener on /chats/{chatId}/metadata.
-      // Fires ONLY when metadata changes — never when messages are written.
       if (!metaUnsubs.has(chatId)) {
         const metaRef = ref(db, `chats/${chatId}/metadata`);
         const unsub = onValue(metaRef, (snap) => {
           const m = snap.val() as Record<string, unknown> | null;
-          if (m) upsertRoom(chatId, m);
+          if (m) {
+            console.info(`[useFirebaseChatList] 🔄 Metadata cập nhật: ${chatId}`, m);
+            upsertRoom(chatId, m);
+          }
         });
         metaUnsubs.set(chatId, unsub);
       }
 
       if (!initialLoadDone) {
-        // Firebase fires all existing children synchronously then stops —
-        // use a micro-task to detect when the initial burst is done.
         Promise.resolve().then(() => {
           initialLoadDone = true;
+          console.info("[useFirebaseChatList] ✅ Load xong danh sách phòng ban đầu.");
           setIsLoading(false);
         });
       }
@@ -114,16 +112,22 @@ export function useFirebaseChatList(enabled: boolean) {
     const unsubRemoved = onChildRemoved(chatsRef, (snapshot) => {
       const chatId = snapshot.key;
       if (chatId) {
+        console.info(`[useFirebaseChatList] 🗑️ Phòng bị xóa: ${chatId}`);
         metaUnsubs.get(chatId)?.();
         metaUnsubs.delete(chatId);
         setRooms((prev) => prev.filter((r) => r.chatId !== chatId));
       }
     });
 
-    // Fallback: mark loading done after 4s even if Firebase returns nothing
-    const timeout = setTimeout(() => setIsLoading(false), 4000);
+    const timeout = setTimeout(() => {
+      if (!initialLoadDone) {
+        console.warn("[useFirebaseChatList] ⏱️ Timeout 4s — không nhận được dữ liệu từ Firebase.");
+      }
+      setIsLoading(false);
+    }, 4000);
 
     return () => {
+      console.info("[useFirebaseChatList] 🔌 Hủy tất cả listeners.");
       unsubAdded();
       unsubRemoved();
       metaUnsubs.forEach((unsub) => unsub());
@@ -134,13 +138,21 @@ export function useFirebaseChatList(enabled: boolean) {
 
   // useMemo: stabilise the array reference so downstream useMemo/useEffect
   // deps don't trigger on unrelated state updates.
-  const openRooms = useMemo(
-    () =>
-      rooms
-        .filter((r) => r.status === "open")
-        .sort((a, b) => b.createdAt - a.createdAt),
-    [rooms]
-  );
+  const openRooms = useMemo(() => {
+    const filtered = rooms
+      .filter((r) => r.status === "open")
+      .sort((a, b) => b.createdAt - a.createdAt);
+
+    // Deduplicate by userId: if the same user triggered multiple HumanOnline
+    // sessions (e.g. reconnect, multiple fallbacks), keep only the most recent room.
+    const seen = new Set<string>();
+    return filtered.filter((r) => {
+      const key = r.userId || r.chatId;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [rooms]);
 
   return { rooms: openRooms, allRooms: rooms, isLoading };
 }

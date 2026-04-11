@@ -3,16 +3,18 @@
 import { useState, useRef, useEffect, useCallback, useId } from "react";
 import { chatApi } from "../api/chatApi";
 import { useFirebaseChat } from "../hooks/useFirebaseChat";
+import { useUserNotification } from "@/app/hooks/useUserNotification";
+import { useChatRoom } from "@/app/hooks/useChatRoom";
 import type { ChatMessage, ChatMode, ChatWidgetConfig } from "../types/chat";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function generateUserId() {
-  return `user_anon_${Math.random().toString(36).slice(2, 10)}`;
+  return `user_anon_${crypto.randomUUID()}`;
 }
 
 function generateSessionId() {
-  return `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `session_${Date.now()}_${crypto.randomUUID()}`;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -52,7 +54,9 @@ function MessageBubble({ message }: MessageBubbleProps) {
   }
 
   return (
-    <div className={`flex gap-1.5 max-w-[88%] ${isUser ? "self-end flex-row-reverse" : "self-start"}`}>
+    <div
+      className={`flex gap-1.5 max-w-[88%] ${isUser ? "self-end flex-row-reverse" : "self-start"}`}
+    >
       {/* Avatar */}
       <div
         className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 self-end
@@ -65,11 +69,12 @@ function MessageBubble({ message }: MessageBubbleProps) {
       <div className="flex flex-col gap-0.5">
         <div
           className={`px-3 py-1.5 text-[11px] leading-relaxed rounded-xl
-            ${isUser
-              ? "bg-[#185FA5] text-white rounded-tr-sm"
-              : isAdmin
-              ? "bg-[#085041] text-white rounded-tl-sm"
-              : "bg-white border border-gray-200 text-gray-900 rounded-tl-sm"
+            ${
+              isUser
+                ? "bg-[#185FA5] text-white rounded-tr-sm"
+                : isAdmin
+                  ? "bg-[#085041] text-white rounded-tl-sm"
+                  : "bg-white border border-gray-200 text-gray-900 rounded-tl-sm"
             }`}
         >
           {message.messageText}
@@ -108,11 +113,22 @@ function ModeBanner({ mode }: { mode: ChatMode }) {
   if (!cfg) return null;
 
   return (
-    <div className={`text-[10px] font-medium text-center px-3 py-1.5 border-b ${cfg.cls}`}>
+    <div
+      className={`text-[10px] font-medium text-center px-3 py-1.5 border-b ${cfg.cls}`}
+    >
       {cfg.text}
     </div>
   );
 }
+
+// ─── Status config ────────────────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<ChatMode, { dot: string; text: string }> = {
+  AI: { dot: "bg-[#9FE1CB]", text: "AI đang trực tuyến" },
+  Human: { dot: "bg-green-400", text: "Nhân viên đang hỗ trợ" },
+  Waiting: { dot: "bg-amber-400 animate-pulse", text: "Đang chờ nhân viên…" },
+  Offline: { dot: "bg-gray-400", text: "Offline" },
+};
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 
@@ -146,7 +162,11 @@ export function ChatWidget({ config }: ChatWidgetProps) {
       // Dedup: skip messages we already rendered (user's own messages)
       if (shownMsgIdsRef.current.has(message.id)) return;
       // Skip user's own messages re-emitted by Firebase
-      if (message.senderType === "User" && message.senderId === userIdRef.current) return;
+      if (
+        message.senderType === "User" &&
+        message.senderId === userIdRef.current
+      )
+        return;
 
       shownMsgIdsRef.current.add(message.id);
       setMessages((prev) => [...prev, message]);
@@ -159,10 +179,10 @@ export function ChatWidget({ config }: ChatWidgetProps) {
         if (message.messageText.includes("AI Mode")) setMode("AI");
       }
     },
-    [isOpen]
+    [isOpen],
   );
 
-  useFirebaseChat({
+  const { pushMessage } = useFirebaseChat({
     roomId,
     enabled: isFirebaseMode,
     onMessage: handleFirebaseMessage,
@@ -186,7 +206,8 @@ export function ChatWidget({ config }: ChatWidgetProps) {
       id: "greeting",
       senderType: "AI",
       senderId: "system",
-      messageText: "Xin chào! Tôi là trợ lý AI của CLB Côn Nhị Khúc Hà Đông. Tôi có thể giúp gì cho bạn? Hỏi về lịch tập, học phí, hoặc đăng ký nhé!",
+      messageText:
+        "Xin chào! Tôi là trợ lý AI của CLB Côn Nhị Khúc Hà Đông. Tôi có thể giúp gì cho bạn? Hỏi về lịch tập, học phí, hoặc đăng ký nhé!",
       messageType: "text",
       createdAt: Date.now(),
     };
@@ -218,6 +239,36 @@ export function ChatWidget({ config }: ChatWidgetProps) {
     return null;
   }, [roomId, config]);
 
+  // ─── Message helpers ──────────────────────────────────────────────────────
+  const appendError = useCallback((text: string) => {
+    const errMsg: ChatMessage = {
+      id: `err_${Date.now()}`,
+      senderType: "System",
+      messageText: text,
+      messageType: "system",
+      createdAt: Date.now(),
+    };
+    shownMsgIdsRef.current.add(errMsg.id);
+    setMessages((prev) => [...prev, errMsg]);
+  }, []);
+
+  const triggerFallback = useCallback(
+    (rid: string, noticeText: string) => {
+      const notice: ChatMessage = {
+        id: `fallback_${Date.now()}`,
+        senderType: "System",
+        messageText: noticeText,
+        messageType: "system",
+        createdAt: Date.now(),
+      };
+      shownMsgIdsRef.current.add(notice.id);
+      setMessages((prev) => [...prev, notice]);
+      setMode("Waiting");
+      if (!roomId) setRoomId(rid);
+    },
+    [roomId],
+  );
+
   // ─── Send message ─────────────────────────────────────────────────────────
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -237,8 +288,9 @@ export function ChatWidget({ config }: ChatWidgetProps) {
     shownMsgIdsRef.current.add(userMsg.id);
     setMessages((prev) => [...prev, userMsg]);
 
-    // ── Human mode: just push to Firebase, admin will reply ─────────────────
+    // ── Human mode: push directly to Firebase, admin will reply ─────────────
     if (mode === "Human" && roomId) {
+      await pushMessage(text, userIdRef.current, "User");
       setIsSending(false);
       return;
     }
@@ -266,8 +318,10 @@ export function ChatWidget({ config }: ChatWidgetProps) {
     setIsSending(false);
 
     if (!result.isSuccess) {
-      // Treat API error as fallback trigger
-      triggerFallback(rid, "Xin lỗi, hiện tại tôi gặp sự cố kỹ thuật. Đang kết nối với nhân viên hỗ trợ…");
+      triggerFallback(
+        rid,
+        "Xin lỗi, hiện tại tôi gặp sự cố kỹ thuật. Đang kết nối với nhân viên hỗ trợ…",
+      );
       return;
     }
 
@@ -276,7 +330,11 @@ export function ChatWidget({ config }: ChatWidgetProps) {
     if (!aiResponse) return;
 
     if (aiResponse.fallbackToHuman) {
-      triggerFallback(rid, aiResponse.messageText || "Câu hỏi này cần được hỗ trợ trực tiếp. Đang kết nối với nhân viên…");
+      triggerFallback(
+        rid,
+        aiResponse.messageText ||
+          "Câu hỏi này cần được hỗ trợ trực tiếp. Đang kết nối với nhân viên…",
+      );
       return;
     }
 
@@ -294,35 +352,7 @@ export function ChatWidget({ config }: ChatWidgetProps) {
     };
     shownMsgIdsRef.current.add(aiMsg.id);
     setMessages((prev) => [...prev, aiMsg]);
-  }, [input, isSending, mode, roomId, ensureRoom]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function appendError(text: string) {
-    const errMsg: ChatMessage = {
-      id: `err_${Date.now()}`,
-      senderType: "System",
-      messageText: text,
-      messageType: "system",
-      createdAt: Date.now(),
-    };
-    shownMsgIdsRef.current.add(errMsg.id);
-    setMessages((prev) => [...prev, errMsg]);
-  }
-
-  function triggerFallback(rid: string, noticeText: string) {
-    const notice: ChatMessage = {
-      id: `fallback_${Date.now()}`,
-      senderType: "System",
-      messageText: noticeText,
-      messageType: "system",
-      createdAt: Date.now(),
-    };
-    shownMsgIdsRef.current.add(notice.id);
-    setMessages((prev) => [...prev, notice]);
-    setMode("Waiting");
-
-    // If roomId wasn't set yet (ensureRoom already set it), ensure it is
-    if (!roomId) setRoomId(rid);
-  }
+  }, [input, isSending, mode, roomId, ensureRoom, appendError, triggerFallback, pushMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -331,24 +361,7 @@ export function ChatWidget({ config }: ChatWidgetProps) {
     }
   };
 
-  // ─── Status dot color ─────────────────────────────────────────────────────
-  const statusDotColor =
-    mode === "AI"
-      ? "bg-[#9FE1CB]"
-      : mode === "Human"
-      ? "bg-green-400"
-      : mode === "Waiting"
-      ? "bg-amber-400 animate-pulse"
-      : "bg-gray-400";
-
-  const statusText =
-    mode === "AI"
-      ? "AI đang trực tuyến"
-      : mode === "Human"
-      ? "Nhân viên đang hỗ trợ"
-      : mode === "Waiting"
-      ? "Đang chờ nhân viên…"
-      : "Offline";
+  const { dot: statusDotColor, text: statusText } = STATUS_CONFIG[mode];
 
   return (
     <div className="fixed bottom-4 right-4 flex flex-col items-end gap-2.5 z-[900]">
@@ -364,7 +377,9 @@ export function ChatWidget({ config }: ChatWidgetProps) {
             <ChatIcon className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-white">CLB Côn Nhị Khúc</div>
+            <div className="text-[13px] font-semibold text-white">
+              CLB Côn Nhị Khúc
+            </div>
             <div className="text-[10px] text-white/80 flex items-center gap-1 mt-0.5">
               <span className={`w-1.5 h-1.5 rounded-full ${statusDotColor}`} />
               {statusText}
@@ -409,8 +424,8 @@ export function ChatWidget({ config }: ChatWidgetProps) {
               mode === "Human"
                 ? "Nhắn tin cho nhân viên…"
                 : mode === "Waiting"
-                ? "Chờ nhân viên tiếp nhận…"
-                : "Nhập tin nhắn…"
+                  ? "Chờ nhân viên tiếp nhận…"
+                  : "Nhập tin nhắn…"
             }
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -419,7 +434,12 @@ export function ChatWidget({ config }: ChatWidgetProps) {
           />
           <button
             onClick={sendMessage}
-            disabled={isSending || !input.trim() || mode === "Waiting" || mode === "Offline"}
+            disabled={
+              isSending ||
+              !input.trim() ||
+              mode === "Waiting" ||
+              mode === "Offline"
+            }
             className="w-8 h-8 bg-[#185FA5] border-0 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-[#0C447C] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             aria-label="Gửi tin nhắn"
           >
@@ -454,7 +474,13 @@ export function ChatWidget({ config }: ChatWidgetProps) {
 
 function ChatIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
       <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
     </svg>
   );
@@ -462,7 +488,13 @@ function ChatIcon({ className }: { className?: string }) {
 
 function SendIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
       <line x1="22" y1="2" x2="11" y2="13" />
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
     </svg>

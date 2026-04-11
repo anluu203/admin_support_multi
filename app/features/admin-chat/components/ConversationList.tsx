@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/app/utils/cn";
 import type { AdminChatSession, PendingMessage } from "../types/adminChat";
+import { Search, X } from "lucide-react";
 
-type TabKey = "all" | "realtime" | "pending";
+type TabKey = "all" | "realtime" | "pending" | "closed";
 
 // ─── Room item (Firebase realtime) ────────────────────────────────────────────
 
@@ -126,9 +127,31 @@ export function ConversationList({
   onSelectPending,
 }: ConversationListProps) {
   const [tab, setTab] = useState<TabKey>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const visibleSessions = tab === "pending" ? [] : sessions;
-  const visiblePending = tab === "realtime" ? [] : pendingMessages;
+  // Filter sessions and pending messages by search query
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return sessions;
+    const q = searchQuery.toLowerCase();
+    return sessions.filter((s) =>
+      s.displayName.toLowerCase().includes(q) ||
+      s.userQuestion.toLowerCase().includes(q) ||
+      s.chatId.toLowerCase().includes(q)
+    );
+  }, [sessions, searchQuery]);
+
+  const filteredPending = useMemo(() => {
+    if (!searchQuery.trim()) return pendingMessages;
+    const q = searchQuery.toLowerCase();
+    return pendingMessages.filter((p) =>
+      (p.userName ?? "").toLowerCase().includes(q) ||
+      p.userMessage.toLowerCase().includes(q) ||
+      p.sessionId.toLowerCase().includes(q)
+    );
+  }, [pendingMessages, searchQuery]);
+
+  const visibleSessions = tab === "pending" ? [] : filteredSessions;
+  const visiblePending = tab === "realtime" ? [] : filteredPending;
   const isEmpty = visibleSessions.length === 0 && visiblePending.length === 0;
 
   // Only show skeleton on INITIAL load (no data yet).
@@ -148,6 +171,29 @@ export function ConversationList({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {/* Search bar */}
+      <div className="px-2 py-2 flex-shrink-0 bg-gray-50 border-b border-gray-200">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Tìm hội thoại…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-8 py-2 text-[12px] bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-200 transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Xóa tìm kiếm"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="flex border-b border-gray-200 flex-shrink-0">
         {tabs.map((t) => (
@@ -228,6 +274,7 @@ function EmptyState({ tab }: { tab: TabKey }) {
     all: "Không có hội thoại nào",
     realtime: "Không có chat realtime",
     pending: "Không có tin nhắn chờ",
+    closed: "Không có hội thoại đã đóng",
   };
   return (
     <div className="flex flex-col items-center justify-center py-12 gap-2 text-center px-4">

@@ -27,12 +27,16 @@ function getApp(): FirebaseApp {
  * so callers can skip Firebase operations gracefully.
  */
 export function getDb(): Database | null {
-  if (!process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL) return null;
+  if (!process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL) {
+    console.warn("[Firebase] ❌ NEXT_PUBLIC_FIREBASE_DATABASE_URL chưa được set — realtime bị tắt.");
+    return null;
+  }
   if (!_db) {
     try {
       _db = getDatabase(getApp());
+      console.info("[Firebase] ✅ Kết nối thành công:", process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL);
     } catch (e) {
-      console.warn("[Firebase] Database init failed:", e);
+      console.error("[Firebase] ❌ Khởi tạo Database thất bại:", e);
       return null;
     }
   }
