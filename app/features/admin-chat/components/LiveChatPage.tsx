@@ -435,47 +435,49 @@ export function LiveChatPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
-      {/* ── DESKTOP SIDEBAR (hidden on md, visible on lg+) ─────────────────── */}
-      <div className="hidden md:flex w-[260px] bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0 space-y-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-              <ChatBubbleIcon className="w-3.5 h-3.5 text-white" />
+      {/* ── DESKTOP SIDEBAR (conditional render on desktop only) ─────────────────── */}
+      {!isMobile && (
+        <div className="w-[260px] bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0 space-y-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <ChatBubbleIcon className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-gray-900 leading-tight">
+                  Live Chat
+                </p>
+                <p className="text-[10px] text-gray-400">Hội thoại khách hàng</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[13px] font-bold text-gray-900 leading-tight">
-                Live Chat
-              </p>
-              <p className="text-[10px] text-gray-400">Hội thoại khách hàng</p>
-            </div>
+
+            {/* Online badge — only renders after mount to avoid hydration mismatch */}
+            {mounted && (
+              <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
+                <span className="text-[11px] font-semibold text-green-700 truncate">
+                  {admin.displayName}
+                </span>
+                <span className="text-[10px] text-green-500 ml-auto flex-shrink-0">
+                  Online
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Online badge — only renders after mount to avoid hydration mismatch */}
-          {mounted && (
-            <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
-              <span className="text-[11px] font-semibold text-green-700 truncate">
-                {admin.displayName}
-              </span>
-              <span className="text-[10px] text-green-500 ml-auto flex-shrink-0">
-                Online
-              </span>
-            </div>
-          )}
+          <ConversationList
+            sessions={sessions}
+            pendingMessages={pendingMessages}
+            activeKey={activeKey}
+            pendingCount={pendingCount}
+            isLoadingRooms={isLoadingRooms}
+            isLoadingPending={isLoadingPending}
+            onSelectSession={selectRoom}
+            onSelectPending={selectPending}
+          />
         </div>
-
-        <ConversationList
-          sessions={sessions}
-          pendingMessages={pendingMessages}
-          activeKey={activeKey}
-          pendingCount={pendingCount}
-          isLoadingRooms={isLoadingRooms}
-          isLoadingPending={isLoadingPending}
-          onSelectSession={selectRoom}
-          onSelectPending={selectPending}
-        />
-      </div>
+      )}
 
       {/* ── MAIN AREA ──────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
@@ -539,10 +541,12 @@ export function LiveChatPage() {
               />
             </div>
 
-            {/* Info panel - hidden on small screens (md:hidden = hidden on md-, shown on lg+) */}
-            <div className="hidden lg:flex w-52 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0 flex flex-col">
-              <InfoPanel active={active} onQuickReply={setPrefilledText} />
-            </div>
+            {/* Info panel - hidden on mobile/tablet (conditional render on desktop only) */}
+            {!isMobile && active && (
+              <div className="w-52 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0 flex flex-col">
+                <InfoPanel active={active} onQuickReply={setPrefilledText} />
+              </div>
+            )}
           </div>
         )}
       </div>
