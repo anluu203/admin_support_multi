@@ -6,23 +6,24 @@ import {
   LogOut,
   Settings,
   Users,
-  Ticket,
   MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 interface ProtectedSidebarProps {
+  userAvatar?: string;
   onLogout?: () => void;
   userName?: string;
   userEmail?: string;
+  activePath?: string;
 }
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Users, label: "Phân quyền", href: "/phan-quyen" },
   { icon: Settings, label: "Cài đặt", href: "/cai-dat" },
-  { icon: MessageCircle, label: "Quản lý chat", href: "/dashboard/chat" },
+  { icon: MessageCircle, label: "Quản lý chat", href: "/chat" },
 ];
 
 export default function ProtectedSidebar({ onLogout }: ProtectedSidebarProps) {
@@ -36,7 +37,7 @@ export default function ProtectedSidebar({ onLogout }: ProtectedSidebarProps) {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col border-r border-border bg-white">
       {/* Logo Section */}
-      <div className="flex items-center gap-3 border-b border-border px-6 py-4 flex-shrink-0">
+      <div className="flex items-center gap-3 border-b border-border px-6 py-4 shrink-0">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white font-bold text-lg">
           HĐ
         </div>
@@ -75,7 +76,7 @@ export default function ProtectedSidebar({ onLogout }: ProtectedSidebarProps) {
 
       <Divider />
 
-      <div className="px-4 py-4 flex-shrink-0">
+      <div className="px-4 py-4 shrink-0">
         <Button
           variant="outline"
           fullWidth

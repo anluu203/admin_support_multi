@@ -1,10 +1,11 @@
 "use client";
 
-import  { useMemo } from "react";
+import Image from "next/image";
+import { useMemo } from "react";
 import { User, UserRole } from "@/app/types/user";
 import { Table, TableColumn } from "@/app/components/organisms/Table";
 import { StatusBadge } from "@/app/components/atoms/StatusBadge";
-import { RoleBadge } from "@/app/features/phan-quyen/components/RoleBadge";
+import { RoleBadge } from "@/app/components/atoms/RoleBadge";
 import { Text } from "@/app/components/atoms/Text";
 import { UserActionButtons } from "@/app/components/molecules/UserActionButtons";
 
@@ -43,12 +44,14 @@ export function UserTable({
         header: "Người dùng",
         render: (user) => (
           <div className="flex items-center">
-            <div className="flex-shrink-0 h-10 w-10">
+            <div className="shrink-0 h-10 w-10">
               {user.avatarUrl ? (
-                <img
-                  className="h-10 w-10 rounded-full object-cover"
+                <Image
                   src={user.avatarUrl}
-                  alt=""
+                  alt={user.fullName}
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 rounded-full object-cover"
                 />
               ) : (
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
