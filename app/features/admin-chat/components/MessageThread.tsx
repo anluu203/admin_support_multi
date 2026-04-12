@@ -21,11 +21,16 @@ function Bubble({ msg }: { msg: FirebaseChatMessage }) {
   const isAdmin = msg.sender === "admin";
 
   return (
-    <div className={cn("flex gap-2 max-w-[85%] sm:max-w-[78%]", isAdmin ? "ml-auto flex-row-reverse" : "")}>
+    <div
+      className={cn(
+        "flex gap-2 max-w-[85%] sm:max-w-[78%]",
+        isAdmin ? "ml-auto flex-row-reverse" : "",
+      )}
+    >
       <div
         className={cn(
           "w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 self-end",
-          isAdmin ? "bg-teal-700 text-white" : "bg-blue-100 text-blue-700"
+          isAdmin ? "bg-teal-700 text-white" : "bg-blue-100 text-blue-700",
         )}
       >
         {isAdmin ? "A" : "U"}
@@ -36,12 +41,17 @@ function Bubble({ msg }: { msg: FirebaseChatMessage }) {
             "px-3 py-2 text-[11px] sm:text-[12px] leading-relaxed rounded-xl",
             isAdmin
               ? "bg-teal-700 text-white rounded-tr-sm"
-              : "bg-white border border-gray-200 text-gray-900 rounded-tl-sm"
+              : "bg-white border border-gray-200 text-gray-900 rounded-tl-sm",
           )}
         >
           {msg.text}
         </div>
-        <span className={cn("text-[9px] sm:text-[10px] text-gray-400 px-0.5", isAdmin && "text-right")}>
+        <span
+          className={cn(
+            "text-[9px] sm:text-[10px] text-gray-400 px-0.5",
+            isAdmin && "text-right",
+          )}
+        >
           {formatTs(msg.timestamp)}
         </span>
       </div>
@@ -53,7 +63,12 @@ function Bubble({ msg }: { msg: FirebaseChatMessage }) {
 
 function SkeletonBubble({ align }: { align: "left" | "right" }) {
   return (
-    <div className={cn("flex gap-2 max-w-[60%]", align === "right" ? "ml-auto flex-row-reverse" : "")}>
+    <div
+      className={cn(
+        "flex gap-2 max-w-[60%]",
+        align === "right" ? "ml-auto flex-row-reverse" : "",
+      )}
+    >
       <div className="w-7 h-7 rounded-full bg-gray-200 flex-shrink-0 animate-pulse" />
       <div className="h-9 flex-1 rounded-xl bg-gray-200 animate-pulse" />
     </div>
@@ -89,8 +104,11 @@ export function RoomThread({ messages, isLoading }: RoomThreadProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-gray-50/60">
       {/* Message search bar */}
-      <div className="flex-shrink-0 flex justify-end px-2 py-1 border-b border-gray-200 bg-white">
-        <MessageSearch messages={messages} onScrollToMessage={handleScrollToMessage} />
+      <div className="flex-shrink-0 flex items-center justify-end border-b border-gray-200 bg-white min-h-[40px]">
+        <MessageSearch
+          messages={messages}
+          onScrollToMessage={handleScrollToMessage}
+        />
       </div>
 
       {/* Messages */}
@@ -109,9 +127,9 @@ export function RoomThread({ messages, isLoading }: RoomThreadProps) {
             <p className="text-[12px] text-gray-400">Chưa có tin nhắn</p>
           </div>
         ) : (
-          messages.map((msg) => (
+          messages.map((msg, index) => (
             <div
-              key={msg.id}
+              key={index}
               ref={(el) => {
                 if (el) messageRefs.current[msg.id] = el;
               }}
@@ -140,7 +158,9 @@ function AdminReplyBubble({ text, time }: { text: string; time?: string }) {
           {text}
         </div>
         {time && (
-          <span className="text-[9px] sm:text-[10px] text-gray-400 px-0.5 text-right">{time}</span>
+          <span className="text-[9px] sm:text-[10px] text-gray-400 px-0.5 text-right">
+            {time}
+          </span>
         )}
       </div>
     </div>
@@ -155,7 +175,10 @@ interface PendingThreadProps {
   extraReplies?: string[];
 }
 
-export function PendingThread({ pending, extraReplies = [] }: PendingThreadProps) {
+export function PendingThread({
+  pending,
+  extraReplies = [],
+}: PendingThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -173,7 +196,9 @@ export function PendingThread({ pending, extraReplies = [] }: PendingThreadProps
           <div className="px-3 py-2 text-[11px] sm:text-[12px] leading-relaxed bg-white border border-gray-200 text-gray-900 rounded-xl rounded-tl-sm">
             {pending.userMessage}
           </div>
-          <span className="text-[9px] sm:text-[10px] text-gray-400 px-0.5">{formatIso(pending.createdAt)}</span>
+          <span className="text-[9px] sm:text-[10px] text-gray-400 px-0.5">
+            {formatIso(pending.createdAt)}
+          </span>
         </div>
       </div>
 
@@ -200,7 +225,10 @@ export function PendingThread({ pending, extraReplies = [] }: PendingThreadProps
 function formatTs(ts: string | number): string {
   try {
     const d = new Date(typeof ts === "number" ? ts : ts);
-    return d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return "";
   }
@@ -208,7 +236,10 @@ function formatTs(ts: string | number): string {
 
 function formatIso(iso: string): string {
   try {
-    return new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    return new Date(iso).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return "";
   }

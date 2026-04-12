@@ -59,7 +59,7 @@ export function MessageSearch({ messages, onScrollToMessage }: MessageSearchProp
   }
 
   return (
-    <div className="flex items-center gap-1 px-2 py-1.5 bg-gray-50 border-b border-gray-200 rounded-t">
+    <div className="flex items-center gap-1 w-full px-2 py-1.5 bg-gray-50 border-b border-gray-200 rounded-t">
       <div className="flex-1 flex items-center gap-1 bg-white border border-gray-200 rounded px-2">
         <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
         <input

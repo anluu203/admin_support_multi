@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { cn } from "@/app/lib/utils/cn";
-import { Menu, X, Info } from "lucide-react";
+import { X, Info, ChevronLeft } from "lucide-react";
 import { useIsMobile } from "@/app/hooks/useIsMobile";
 import { ConversationList } from "./ConversationList";
 import { RoomThread, PendingThread } from "./MessageThread";
@@ -18,7 +18,6 @@ import {
   type FirebaseChatMessage,
   type PendingMessage,
 } from "../types/adminChat";
-import Link from "next/link";
 
 // ─── Admin info (client-only) ─────────────────────────────────────────────────
 
@@ -54,19 +53,34 @@ function readAdminFromStorage(): AdminInfo {
 function ChatHeader({
   active,
   onClose,
+  onBack,
+  onShowInfo,
 }: {
   active: ActiveConv;
   onClose: () => void;
+  onBack?: () => void;
+  onShowInfo?: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
 
   // Reset confirm state whenever the active conversation changes
-  useEffect(() => { setConfirming(false); }, [active]);
+  useEffect(() => {
+    setConfirming(false);
+  }, [active]);
 
   if (!active) {
     return (
-      <div className="h-14 border-b border-gray-200 bg-white flex items-center px-5 flex-shrink-0">
-        <ChatBubbleIcon className="w-4 h-4 text-gray-300 mr-2" />
+      <div className="h-14 border-b border-gray-200 bg-white flex items-center px-4 flex-shrink-0 gap-2">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
+            aria-label="Quay lại"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+        <ChatBubbleIcon className="w-4 h-4 text-gray-300" />
         <span className="text-[13px] text-gray-400">
           Chọn một hội thoại để bắt đầu
         </span>
@@ -80,57 +94,88 @@ function ChatHeader({
     : (active.pending.userName ?? "Khách");
   const sub = isRoom
     ? `Chat #${active.session.chatId.slice(-8)}`
-    : `Tin nhắn offline · ${active.pending.createdAt ? new Date(active.pending.createdAt).toLocaleString("vi-VN") : ""}`;
+    : `Offline · ${active.pending.createdAt ? new Date(active.pending.createdAt).toLocaleString("vi-VN") : ""}`;
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(-2)
+    .join("")
+    .toUpperCase();
 
   return (
-    <div className="h-14 border-b border-gray-200 bg-white flex items-center gap-3 px-4 flex-shrink-0">
+    <div className="h-14 border-b border-gray-200 bg-white flex items-center gap-2 px-3 flex-shrink-0">
+      {/* Back button (mobile) */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
+          aria-label="Quay lại danh sách"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+      )}
+
+      {/* Avatar */}
       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700 flex-shrink-0">
-        {name
-          .split(" ")
-          .map((w) => w[0])
-          .slice(-2)
-          .join("")
-          .toUpperCase()}
+        {initials}
       </div>
+
+      {/* Name + sub */}
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold text-gray-900 truncate">
-          {name}
-        </p>
+        <p className="text-[13px] font-semibold text-gray-900 truncate">{name}</p>
         <p className="text-[11px] text-gray-400 truncate">{sub}</p>
       </div>
 
-      {isRoom ? (
-        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 flex-shrink-0 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          Realtime
-        </span>
-      ) : (
-        <span
-          className={cn(
-            "text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0",
-            active.pending.status === "Replied"
-              ? "bg-green-50 text-green-700"
-              : "bg-amber-50 text-amber-700",
-          )}
-        >
-          {active.pending.status === "Replied"
-            ? "Đã phản hồi"
-            : "Offline queue"}
-        </span>
+      {/* Badge — hidden on mobile to save space */}
+      {!onBack && (
+        isRoom ? (
+          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 flex-shrink-0 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            Realtime
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0",
+              active.pending.status === "Replied"
+                ? "bg-green-50 text-green-700"
+                : "bg-amber-50 text-amber-700",
+            )}
+          >
+            {active.pending.status === "Replied" ? "Đã phản hồi" : "Offline queue"}
+          </span>
+        )
       )}
 
+      {/* Info button (mobile) */}
+      {onShowInfo && !confirming && (
+        <button
+          onClick={onShowInfo}
+          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
+          aria-label="Chi tiết hội thoại"
+        >
+          <Info className="w-4 h-4" />
+        </button>
+      )}
+
+      {/* Close / Confirm */}
       {confirming ? (
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[11px] text-red-600 font-semibold">Kết thúc hội thoại?</span>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className="text-[10px] text-red-600 font-semibold hidden sm:inline whitespace-nowrap">
+            Kết thúc?
+          </span>
           <button
-            onClick={() => { setConfirming(false); onClose(); }}
-            className="text-[11px] font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg px-2.5 py-1.5 transition-colors"
+            onClick={() => {
+              setConfirming(false);
+              onClose();
+            }}
+            className="text-[11px] font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg px-2 py-1.5 transition-colors whitespace-nowrap"
           >
-            Xác nhận
+            OK
           </button>
           <button
             onClick={() => setConfirming(false)}
-            className="text-[11px] font-semibold text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg px-2.5 py-1.5 transition-colors"
+            className="text-[11px] font-semibold text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors"
           >
             Hủy
           </button>
@@ -138,7 +183,7 @@ function ChatHeader({
       ) : (
         <button
           onClick={() => setConfirming(true)}
-          className="text-[11px] font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg px-3 py-1.5 transition-colors flex-shrink-0"
+          className="text-[11px] font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg px-2.5 py-1.5 transition-colors flex-shrink-0 whitespace-nowrap"
         >
           Kết thúc
         </button>
@@ -188,7 +233,7 @@ function InfoPanel({
         ];
 
   return (
-    <div className="w-52 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0 flex flex-col">
+    <div className="flex flex-col h-full overflow-y-auto">
       {/* Info */}
       <div className="px-4 py-3 border-b border-gray-100">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
@@ -242,12 +287,50 @@ function EmptyPanel() {
   );
 }
 
+// ─── Sidebar header (reused in desktop sidebar & mobile list view) ────────────
+
+function SidebarHeader({
+  admin,
+  mounted,
+}: {
+  admin: AdminInfo;
+  mounted: boolean;
+}) {
+  return (
+    <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0 space-y-2.5">
+      <div className="flex items-center gap-2.5">
+        <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <ChatBubbleIcon className="w-3.5 h-3.5 text-white" />
+        </div>
+        <div>
+          <p className="text-[13px] font-bold text-gray-900 leading-tight">
+            Live Chat
+          </p>
+          <p className="text-[10px] text-gray-400">Hội thoại khách hàng</p>
+        </div>
+      </div>
+
+      {/* Online badge — only renders after mount to avoid hydration mismatch */}
+      {mounted && (
+        <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
+          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
+          <span className="text-[11px] font-semibold text-green-700 truncate">
+            {admin.displayName}
+          </span>
+          <span className="text-[10px] text-green-500 ml-auto flex-shrink-0">
+            Online
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function LiveChatPage() {
   // ── Mobile detection ──────────────────────────────────────────────────────
   const isMobile = useIsMobile();
-  const [showMobileConvList, setShowMobileConvList] = useState(false);
   const [showMobileInfoPanel, setShowMobileInfoPanel] = useState(false);
 
   // ── Defer localStorage to client ──────────────────────────────────────
@@ -319,8 +402,6 @@ export function LiveChatPage() {
   const seenIdsCache = useRef<Record<string, Set<string>>>({});
 
   // Subsequent admin replies for pending messages (beyond the first).
-  // The backend model only stores one adminReply; extra replies are kept
-  // in local session state so the thread shows the full conversation.
   const [pendingExtraReplies, setPendingExtraReplies] = useState<
     Record<string, string[]>
   >({});
@@ -329,6 +410,11 @@ export function LiveChatPage() {
   const [prefilledText, setPrefilledText] = useState("");
 
   const activeChatId = active?.kind === "room" ? active.session.chatId : null;
+
+  // Reset info panel when active conversation changes
+  useEffect(() => {
+    setShowMobileInfoPanel(false);
+  }, [active]);
 
   // ── Firebase messages for open room ───────────────────────────────────
   const { sendMessage: sendFirebaseMsg } = useAdminChatRoom({
@@ -366,7 +452,6 @@ export function LiveChatPage() {
     setRoomMsgs(cached);
 
     // Restore seenIds cache from the cached messages
-    // This prevents Firebase listener from re-emitting them as duplicates
     if (!seenIdsCache.current[chatId]) {
       seenIdsCache.current[chatId] = new Set(cached.map((m) => m.id));
     }
@@ -390,14 +475,15 @@ export function LiveChatPage() {
     // Keep room messages in cache for later viewing
   };
 
+  const handleBack = useCallback(() => {
+    setActive(null);
+  }, []);
+
   const handleSend = async (text: string) => {
     if (!active || !text.trim()) return;
 
     if (active.kind === "room") {
       // Write directly to Firebase for instant delivery.
-      // The REST API call is intentionally removed: it's documented as optional
-      // ("Admin có thể gửi trực tiếp qua Firebase SDK") and causes duplicate
-      // messages when the backend also writes to Firebase with a different key.
       await sendFirebaseMsg(text, admin.id);
     } else {
       const result = await adminChatApi.replyPending(active.pending.id, text);
@@ -416,8 +502,7 @@ export function LiveChatPage() {
           prev.map((p) => (p.id === active.pending.id ? updated : p)),
         );
       } else {
-        // Subsequent replies: accumulate in local session state so the thread
-        // shows the full back-and-forth without needing a backend model change.
+        // Subsequent replies: accumulate in local session state
         setPendingExtraReplies((prev) => ({
           ...prev,
           [active.pending.id]: [...(prev[active.pending.id] ?? []), text],
@@ -433,81 +518,122 @@ export function LiveChatPage() {
         ? `p:${active.pending.id}`
         : null;
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-white">
-      {/* ── DESKTOP SIDEBAR (conditional render on desktop only) ─────────────────── */}
-      {!isMobile && (
-        <div className="w-[260px] bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
-          {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0 space-y-2.5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <ChatBubbleIcon className="w-3.5 h-3.5 text-white" />
-              </div>
-              <div>
-                <p className="text-[13px] font-bold text-gray-900 leading-tight">
-                  Live Chat
-                </p>
-                <p className="text-[10px] text-gray-400">Hội thoại khách hàng</p>
-              </div>
-            </div>
+  // ── Shared: thread + input (used in both mobile and desktop) ──────────
+  const renderThread = () =>
+    active?.kind === "room" ? (
+      <RoomThread messages={roomMsgs} isLoading={isLoadingMsgs} />
+    ) : active?.kind === "pending" ? (
+      <PendingThread
+        pending={active.pending}
+        extraReplies={pendingExtraReplies[active.pending.id] ?? []}
+      />
+    ) : null;
 
-            {/* Online badge — only renders after mount to avoid hydration mismatch */}
-            {mounted && (
-              <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
-                <span className="text-[11px] font-semibold text-green-700 truncate">
-                  {admin.displayName}
-                </span>
-                <span className="text-[10px] text-green-500 ml-auto flex-shrink-0">
-                  Online
-                </span>
-              </div>
-            )}
-          </div>
+  const renderInput = () =>
+    active ? (
+      <ChatInputBar
+        mode={active.kind === "room" ? "firebase" : "pending"}
+        alreadyReplied={
+          active.kind === "pending" && active.pending.status === "Replied"
+        }
+        onSend={handleSend}
+        prefilledText={prefilledText}
+        onPrefilledConsumed={() => setPrefilledText("")}
+        placeholder={
+          active.kind === "room"
+            ? "Nhập tin nhắn… (Enter gửi)"
+            : "Nhập phản hồi…"
+        }
+      />
+    ) : null;
 
-          <ConversationList
-            sessions={sessions}
-            pendingMessages={pendingMessages}
-            activeKey={activeKey}
-            pendingCount={pendingCount}
-            isLoadingRooms={isLoadingRooms}
-            isLoadingPending={isLoadingPending}
-            onSelectSession={selectRoom}
-            onSelectPending={selectPending}
-          />
+  const renderConvList = (opts?: { onSelectSession?: (s: AdminChatSession) => void; onSelectPending?: (p: PendingMessage) => void }) => (
+    <ConversationList
+      sessions={sessions}
+      pendingMessages={pendingMessages}
+      activeKey={activeKey}
+      pendingCount={pendingCount}
+      isLoadingRooms={isLoadingRooms}
+      isLoadingPending={isLoadingPending}
+      onSelectSession={opts?.onSelectSession ?? selectRoom}
+      onSelectPending={opts?.onSelectPending ?? selectPending}
+    />
+  );
+
+  // ── MOBILE: full-screen view ───────────────────────────────────────────
+  if (isMobile) {
+    // No active conversation → show conversation list (full screen)
+    if (!active) {
+      return (
+        <div className="h-[100dvh] flex flex-col overflow-hidden bg-white">
+          <SidebarHeader admin={admin} mounted={mounted} />
+          {renderConvList()}
         </div>
-      )}
+      );
+    }
 
-      {/* ── MAIN AREA ──────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Header with mobile buttons */}
-        <ChatHeader active={active} onClose={handleClose} />
+    // Active conversation → show chat (full screen)
+    return (
+      <div className="h-[100dvh] flex flex-col overflow-hidden bg-white">
+        <ChatHeader
+          active={active}
+          onClose={handleClose}
+          onBack={handleBack}
+          onShowInfo={() => setShowMobileInfoPanel(true)}
+        />
 
-        {/* Mobile hamburger & info buttons - visible only on mobile */}
-        {isMobile && (
-          <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-white">
-            <button
-              onClick={() => setShowMobileConvList(!showMobileConvList)}
-              className="p-2 rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
-              aria-label="Show conversations"
-              title="Conversations"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            {active && (
-              <button
-                onClick={() => setShowMobileInfoPanel(!showMobileInfoPanel)}
-                className="p-2 rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
-                aria-label="Show info panel"
-                title="Info"
-              >
-                <Info className="w-5 h-5" />
-              </button>
-            )}
-            <div className="flex-1" /> {/* Spacer */}
-          </div>
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          {renderThread()}
+          {renderInput()}
+        </div>
+
+        {/* Info panel drawer (mobile) */}
+        {showMobileInfoPanel && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/30 z-40"
+              onClick={() => setShowMobileInfoPanel(false)}
+              aria-hidden
+            />
+            <div className="fixed inset-y-0 right-0 w-[min(280px,85vw)] bg-white border-l border-gray-200 z-50 flex flex-col shadow-xl">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0">
+                <span className="text-[13px] font-bold text-gray-900">
+                  Chi tiết
+                </span>
+                <button
+                  onClick={() => setShowMobileInfoPanel(false)}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
+                  aria-label="Đóng"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <InfoPanel
+                active={active}
+                onQuickReply={(text) => {
+                  setPrefilledText(text);
+                  setShowMobileInfoPanel(false);
+                }}
+              />
+            </div>
+          </>
         )}
+      </div>
+    );
+  }
+
+  // ── DESKTOP: sidebar + main + info panel ──────────────────────────────
+  return (
+    <div className="h-screen flex overflow-hidden bg-white">
+      {/* Sidebar */}
+      <div className="w-[260px] bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+        <SidebarHeader admin={admin} mounted={mounted} />
+        {renderConvList()}
+      </div>
+
+      {/* Main area */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <ChatHeader active={active} onClose={handleClose} />
 
         {!active ? (
           <EmptyPanel />
@@ -515,118 +641,17 @@ export function LiveChatPage() {
           <div className="flex flex-1 overflow-hidden min-h-0">
             {/* Thread + Input */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-              {active.kind === "room" ? (
-                <RoomThread messages={roomMsgs} isLoading={isLoadingMsgs} />
-              ) : (
-                <PendingThread
-                  pending={active.pending}
-                  extraReplies={pendingExtraReplies[active.pending.id] ?? []}
-                />
-              )}
-
-              <ChatInputBar
-                mode={active.kind === "room" ? "firebase" : "pending"}
-                alreadyReplied={
-                  active.kind === "pending" &&
-                  active.pending.status === "Replied"
-                }
-                onSend={handleSend}
-                prefilledText={prefilledText}
-                onPrefilledConsumed={() => setPrefilledText("")}
-                placeholder={
-                  active.kind === "room"
-                    ? "Nhập tin nhắn cho khách…  (Enter gửi · Shift+Enter xuống dòng)"
-                    : "Nhập phản hồi cho tin nhắn offline…"
-                }
-              />
+              {renderThread()}
+              {renderInput()}
             </div>
 
-            {/* Info panel - hidden on mobile/tablet (conditional render on desktop only) */}
-            {!isMobile && active && (
-              <div className="w-52 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0 flex flex-col">
-                <InfoPanel active={active} onQuickReply={setPrefilledText} />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── MOBILE OVERLAY: Conversations Drawer ──────────────────────────── */}
-      {isMobile && showMobileConvList && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowMobileConvList(false)}
-            aria-hidden
-          />
-          {/* Drawer */}
-          <div className="fixed inset-y-0 left-0 w-72 bg-white border-r border-gray-200 z-50 flex flex-col shadow-lg">
-            {/* Close button */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0">
-              <span className="text-[13px] font-bold text-gray-900">Conversations</span>
-              <button
-                onClick={() => setShowMobileConvList(false)}
-                className="p-1 rounded hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
-                aria-label="Close drawer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Conversations List */}
-            <div className="flex-1 overflow-hidden">
-              <ConversationList
-                sessions={sessions}
-                pendingMessages={pendingMessages}
-                activeKey={activeKey}
-                pendingCount={pendingCount}
-                isLoadingRooms={isLoadingRooms}
-                isLoadingPending={isLoadingPending}
-                onSelectSession={(s) => {
-                  selectRoom(s);
-                  setShowMobileConvList(false); // Auto-close on selection
-                }}
-                onSelectPending={(p) => {
-                  selectPending(p);
-                  setShowMobileConvList(false); // Auto-close on selection
-                }}
-              />
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ── MOBILE OVERLAY: Info Panel Drawer ────────────────────────────── */}
-      {isMobile && showMobileInfoPanel && active && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowMobileInfoPanel(false)}
-            aria-hidden
-          />
-          {/* Drawer */}
-          <div className="fixed inset-y-0 right-0 w-72 bg-white border-l border-gray-200 z-50 flex flex-col shadow-lg">
-            {/* Close button */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0">
-              <span className="text-[13px] font-bold text-gray-900">Details</span>
-              <button
-                onClick={() => setShowMobileInfoPanel(false)}
-                className="p-1 rounded hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
-                aria-label="Close drawer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Info Panel Content */}
-            <div className="flex-1 overflow-y-auto">
+            {/* Info panel */}
+            <div className="w-52 border-l border-gray-200 bg-white flex-shrink-0 flex flex-col">
               <InfoPanel active={active} onQuickReply={setPrefilledText} />
             </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }
