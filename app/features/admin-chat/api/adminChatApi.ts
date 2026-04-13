@@ -19,12 +19,12 @@ export interface ApiMessage {
 // Endpoints follow the system flows document (not API_ENDPOINT.MD which is
 // the user-facing API). Firebase is the source of truth for room list.
 
-export const adminChatApi = {
+export const  adminChatApi = {
   // ── Firebase realtime rooms ──────────────────────────────────────────────
   // Room list comes from Firebase /chats/ — no REST endpoint for this.
 
   /** Send admin message to a Firebase chat room (persists to PostgreSQL too) */
-  sendFirebaseMessage: (chatId: string, text: string) =>
+   sendFirebaseMessage: (chatId: string, text: string) =>
     apiClient.post(`/admin/chats/${chatId}/message`, { text }),
 
   /** Close a Firebase chat room */
