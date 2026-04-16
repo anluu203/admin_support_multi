@@ -3,6 +3,7 @@
 import { ProtectedAuthLayout } from "@/app/components/organisms";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { requestNotificationPermissionWithConfirm } from "@/app/lib/firebase-messaging";
 
 /**
  * User interface from localStorage
@@ -55,6 +56,9 @@ export default function AuthLayout({
     const timer = setTimeout(() => {
       setUser(userData);
       setIsAuthorized(true);
+      
+      // Request notification permission for admin users centrally
+      requestNotificationPermissionWithConfirm(userData!.id);
     }, 0);
 
     return () => clearTimeout(timer);

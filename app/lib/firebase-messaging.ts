@@ -57,18 +57,18 @@ export async function requestNotificationPermission(adminId: string) {
 
     const messaging = getFirebaseMessaging();
     console.log("[FCM] Getting FCM token...");
-    const token = await getToken(messaging, {
+    const deviceToken = await getToken(messaging, {
       vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
       serviceWorkerRegistration: registration,
     });
-    console.log("[FCM] FCM token obtained:", token);
+    console.log("[FCM] FCM token obtained:", deviceToken);
     // Gửi token về backend để lưu
     console.log("[FCM] Sending token to backend...");
-    await adminChatApi.saveFcmToken(token);
+    await adminChatApi.saveFcmToken(deviceToken);
     console.log("[FCM] Token sent to backend successfully");
-    return token;
+    return deviceToken;
   }
-  console.log("[FCM] Notification permission denied");
+  console.log("[FCM] Notification permission not granted");
   return null;
 }
 
@@ -84,10 +84,41 @@ export function listenForegroundNotification(
   });
 }
 
+let isConfirmShowing = false;
+
 export async function requestNotificationPermissionWithConfirm(
   adminId: string,
 ): Promise<boolean> {
   if (typeof window === "undefined") return false;
+
+  if (Notification.permission === "granted") {
+    console.log("[FCM] Notification permission already granted. Proceeding silently.");
+    const token = await requestNotificationPermission(adminId);
+    return token !== null;
+  }
+
+  if (Notification.permission === "denied") {
+    console.log("[FCM] Notification permission denied by user browser.");
+    return false;
+  }
+
+  if ("serviceWorker" in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    const hasSW = registrations.some(r => {
+      const url = r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL;
+      return url && url.includes("firebase-messaging-sw.js");
+    });
+
+    if (hasSW) {
+      console.log("[FCM] Service worker already registered. Skipping confirm prompt.");
+      return false;
+    }
+  }
+
+  if (isConfirmShowing) {
+    return false;
+  }
+  isConfirmShowing = true;
 
   console.log("[FCM] Showing confirm dialog for notification permission");
 
@@ -95,6 +126,8 @@ export async function requestNotificationPermissionWithConfirm(
     "Bạn có muốn nhận thông báo push khi có tin nhắn mới từ khách hàng?\n\n" +
       "Điều này sẽ giúp bạn không bỏ lỡ tin nhắn quan trọng khi đang làm việc khác.",
   );
+
+  isConfirmShowing = false;
 
   if (!confirmed) {
     console.log("[FCM] Người dùng từ chối nhận thông báo");

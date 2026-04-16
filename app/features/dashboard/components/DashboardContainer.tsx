@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, Text } from "@/app/components";
-import { requestNotificationPermissionWithConfirm } from "@/app/lib/firebase-messaging";
 import { useEffect, useState } from "react";
 
 /**
@@ -31,11 +30,6 @@ export default function DashboardContainer() {
       try {
         const userData = JSON.parse(userStr) as User;
         setUser(userData);
-
-        // Request notification permission for admin users
-        if (userData.id) {
-          requestNotificationPermissionWithConfirm(userData.id);
-        }
       } catch {
         console.error("Failed to parse user data");
       }
