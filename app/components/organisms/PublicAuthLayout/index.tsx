@@ -1,4 +1,7 @@
+'use client';
 import PublicSidebar from "@/app/components/organisms/PublicSidebar";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 /**
  * PublicAuthLayout component props
@@ -39,6 +42,20 @@ export default function PublicAuthLayout({
   slogan,
   sidebarDescription,
 }: PublicAuthLayoutProps) {
+  const router = useRouter();
+  
+    useEffect(() => {
+      // Check authentication
+      const accessToken = localStorage.getItem("accessToken");
+  
+      if (accessToken ) {
+        router.replace("/dashboard");
+        return;
+      }
+
+
+    }, [router]);
+  
   return (
     <div className="flex min-h-screen bg-white">
       {/* Sidebar - Desktop only */}

@@ -89,24 +89,7 @@ export function PermissionManagement() {
   useEffect(() => {
     const fetchMe = async () => {
       const result = await getCurrentUser();
-      if (isOk(result)) {
-        setCurrentUser(result.data);
-      } else {
-        setCurrentUser({
-          id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-          role: UserRole.SuperAdmin,
-          email: "superadmin@example.com",
-          fullName: "Current SuperAdmin",
-          status: UserStatus.Active,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          lastLoginAt: new Date().toISOString(),
-          emailVerified: true,
-          username: "superadmin",
-          phone: null,
-          avatarUrl: null,
-        });
-      }
+      setCurrentUser(result);
     };
     fetchMe();
   }, []);
@@ -119,42 +102,9 @@ export function PermissionManagement() {
       ...(roleFilter ? { role: roleFilter } : {}),
       ...(statusFilter ? { status: statusFilter } : {}),
     });
+    console.log("Users fetch result:", result);
+      setUsers(result.items);
 
-    if (isOk(result)) {
-      setUsers(result.data.items);
-    } else {
-      // Mock Data
-      setUsers([
-        {
-          id: "mock-student-1",
-          email: "student@example.com",
-          username: "student",
-          fullName: "Nguyễn Văn Học Viên",
-          phone: "0912345678",
-          avatarUrl: null,
-          role: UserRole.Student,
-          status: UserStatus.Active,
-          emailVerified: true,
-          lastLoginAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: "mock-subadmin-1",
-          email: "admin@example.com",
-          username: "adminUser",
-          fullName: "Lê Văn Quản Lý",
-          phone: "0912345679",
-          avatarUrl: null,
-          role: UserRole.SubAdmin,
-          status: UserStatus.Suspended,
-          emailVerified: true,
-          lastLoginAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ]);
-    }
   }, [currentPage, searchTerm, roleFilter, statusFilter]);
 
   useEffect(() => {

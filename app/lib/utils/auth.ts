@@ -27,3 +27,11 @@ export function canPerformAction(currentRole?: UserRole | string, action?: Admin
       return false;
   }
 }
+
+/**
+ * Lấy access token từ localStorage
+ */
+export function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("accessToken");
+}
