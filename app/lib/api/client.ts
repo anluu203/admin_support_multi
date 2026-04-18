@@ -1,5 +1,6 @@
 import { type ApiResponse } from "@/app/types/api";
 import { err, ok, type Result } from "./result";
+import { getAccessToken } from "../utils/auth";
 
 /**
  * Base URL của API Backend
@@ -50,13 +51,6 @@ function buildUrl(
   return `${API_BASE_URL}${url}`;
 }
 
-/**
- * Lấy access token từ localStorage
- */
-function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("accessToken");
-}
 
 /**
  * Handle API response và convert sang Result<T>

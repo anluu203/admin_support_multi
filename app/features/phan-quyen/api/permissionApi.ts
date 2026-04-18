@@ -2,6 +2,8 @@ import { apiClient } from "@/app/lib/api/client";
 import { type Result } from "@/app/lib/api/result";
 import { type User, type PaginatedResponse } from "@/app/types/user";
 import { type UserQueryParams, type AssignRoleRequest } from "../types/api";
+import { NEXT_PUBLIC_API_URL } from "@/app/lib/utils/env";
+import { getAccessToken } from "@/app/lib/utils/auth";
 
 /**
  * Lấy thông tin user hiện tại
@@ -14,8 +16,19 @@ import { type UserQueryParams, type AssignRoleRequest } from "../types/api";
  * }
  * ```
  */
-export async function getCurrentUser(): Promise<Result<User>> {
-  return apiClient.get<User>("/users/me");
+export async function getCurrentUser() {
+  const data = await fetch( `${NEXT_PUBLIC_API_URL}/users/me`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${getAccessToken()}`
+      }
+      
+    }
+
+  );
+  return data.json();
 }
 
 /**
@@ -34,8 +47,28 @@ export async function getCurrentUser(): Promise<Result<User>> {
  */
 export async function getUsers(
   params: UserQueryParams
-): Promise<Result<PaginatedResponse<User>>> {
-  return apiClient.get<PaginatedResponse<User>>("/users", { params });
+): Promise<PaginatedResponse<User>>{
+  // Build query parameters dynamically - only include if values exist
+  const queryParams = new URLSearchParams();
+  
+  if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber.toString());
+  if (params.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
+  if (params.role) queryParams.append('role', params.role);
+  if (params.status) queryParams.append('status', params.status);
+
+  const url = new URL(`${NEXT_PUBLIC_API_URL}/users`);
+  url.search = queryParams.toString();
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${getAccessToken()}`
+    }
+  });
+
+  return response.json();
 }
 
 /**

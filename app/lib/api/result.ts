@@ -116,12 +116,11 @@ export function isError<T>(result: Result<T>): result is ResultError {
  */
 export function toViewResult<T>(
   result: Result<T>,
-  fallback: T
-): { data: T; error: ApiError | null } {
+): { data: T | null; error: ApiError | null } {
   if (isOk(result)) {
     return { data: result.data, error: null };
   }
-  return { data: fallback, error: result.error };
+  return { data: null, error: result.error };
 }
 
 /**
