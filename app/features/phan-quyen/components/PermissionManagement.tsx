@@ -148,13 +148,12 @@ export function PermissionManagement() {
       if (!selectedUser) return;
 
       const result = await assignRole(selectedUser.id, { role: newRole });
-
-      if (isOk(result)) {
-        console.log("Firebase token needs reload.");
+      if (result.id) {
+        alert(`Phân quyền thành công! ${selectedUser.fullName} bây giờ là ${newRole}.`);
         fetchUsers();
         setIsAssignModalOpen(false);
       } else {
-        alert(result.error.message || "Đổi vai trò thất bại");
+        alert( "Đổi vai trò thất bại");
       }
     },
     [selectedUser, fetchUsers],
@@ -228,7 +227,7 @@ export function PermissionManagement() {
       {/* Assign Role Modal */}
       <AssignRoleModal
         isOpen={isAssignModalOpen}
-        onClose={handleModalClose}
+        onClose={handleModalClose}  
         user={selectedUser}
         onConfirm={handleConfirmRoleChange}
       />

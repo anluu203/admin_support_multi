@@ -28,15 +28,7 @@ export function UserActionButtons({
 
   return (
     <div className="flex items-center space-x-3 text-sm">
-      {canEdit && (
-        <button
-          onClick={onEdit}
-          className="text-indigo-600 hover:text-indigo-900 transition-colors"
-          title="Chỉnh sửa thông tin"
-        >
-          <Edit2 className="h-4 w-4" />
-        </button>
-      )}
+
 
       {canChangeRole && (
         <button
@@ -44,7 +36,7 @@ export function UserActionButtons({
           className="text-purple-600 hover:text-purple-900 transition-colors"
           title="Phân quyền"
         >
-          <ShieldAlert className="h-4 w-4" />
+          <Edit2 className="h-4 w-4" />
         </button>
       )}
 

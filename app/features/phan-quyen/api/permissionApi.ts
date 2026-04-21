@@ -1,4 +1,3 @@
-import { apiClient } from "@/app/lib/api/client";
 import { type Result } from "@/app/lib/api/result";
 import { type User, type PaginatedResponse } from "@/app/types/user";
 import { type UserQueryParams, type AssignRoleRequest } from "../types/api";
@@ -86,7 +85,16 @@ export async function assignRole(
   userId: string,
   data: AssignRoleRequest
 ): Promise<Result<void>> {
-  return apiClient.post<void>(`/users/${userId}/assign-role`, data);
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/users/${userId}/assign-role`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${getAccessToken()}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  return response.json();
 }
 
 /**
@@ -101,5 +109,13 @@ export async function assignRole(
  * ```
  */
 export async function deleteUser(userId: string): Promise<Result<void>> {
-  return apiClient.delete<void>(`/users/${userId}`);
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/users/${userId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${getAccessToken()}`
+    }
+  });
+
+  return response.json();
 }
