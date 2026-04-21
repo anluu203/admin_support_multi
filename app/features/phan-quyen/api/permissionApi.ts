@@ -84,7 +84,7 @@ export async function getUsers(
 export async function assignRole(
   userId: string,
   data: AssignRoleRequest
-): Promise<Result<void>> {
+): Promise<any> {
   const response = await fetch(`${NEXT_PUBLIC_API_URL}/users/${userId}/assign-role`, {
     method: "POST",
     headers: {
